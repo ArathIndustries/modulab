@@ -173,6 +173,15 @@
     overflow: auto;
 }
 
+/* Sandbox */
+.sandbox-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.8rem;
+    margin-top: 0.8rem;
+}
+
 /* Nav extras */
 .nav-version {
     font-size: 0.65rem;

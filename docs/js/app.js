@@ -7,6 +7,7 @@ import { initTheme } from './theme.js';
 import { renderNav } from './components/nav.js';
 import { renderDashboard } from './views/dashboard.js';
 import { renderTwin } from './views/twin.js';
+import { renderSandbox } from './views/sandbox.js';
 import { renderAbout } from './views/about.js';
 import { stream } from './stream.js';
 import { connectDemo } from './transports/demo.js';
@@ -22,6 +23,7 @@ function setView(route, renderFn, params = {}) {
 router
     .add('dashboard', () => setView('dashboard', renderDashboard))
     .add('twin', () => setView('twin', renderTwin))
+    .add('sandbox', () => setView('sandbox', renderSandbox))
     .add('about', () => setView('about', renderAbout))
     .default('dashboard')
     .notFound(() => setView('dashboard', renderDashboard));
