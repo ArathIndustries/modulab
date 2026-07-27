@@ -72,6 +72,14 @@ The modulab firmware streams over USB serial and Bluetooth at the same time.
 - The **Dashboard** tab is the diagnostic view: raw values, sample rate, and a
   protocol console showing the exact frames your board is sending.
 
+## Next steps once it works
+
+- Streaming from your own board already? You are one step from a custom
+  module: [PROTOCOL.md → Build your own module](PROTOCOL.md#build-your-own-module)
+  (hello frames, more channels, your own sensors).
+- Want the arm to be YOUR mechanism instead? Scenes are editable JSON:
+  [AUTHORING.md → Your first scene](AUTHORING.md#your-first-scene-10-minutes).
+
 ## If it doesn't work
 
 - Browser must be desktop Chrome or Edge for USB (Web Serial); Firefox and

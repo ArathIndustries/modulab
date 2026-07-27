@@ -6,6 +6,35 @@ a scene is **data, not code**: a JSON document the engine instantiates. The
 editor, when it comes, is a UI that edits this document; the hardcoded sandbox
 becomes merely the first saved scene (`scenes/pol-lever-arm.json`).
 
+## Your first scene (10 minutes)
+
+Prerequisites: a clone of this repo, any text editor, and a local server
+(`cd docs && py -m http.server 8321`). No build step, no tooling.
+
+1. **Copy the reference scene:** duplicate `docs/scenes/pol-lever-arm.json`
+   as `docs/scenes/my-scene.json` and change `meta.id` to `"my-scene"`.
+2. **Load it:** open `http://localhost:8321/?manual=1&scene=my-scene#/sandbox`.
+   ✓ *Verify:* the HUD's scene name (top right) shows your scene; sliders
+   move the arm.
+3. **Change one number:** set the ramp's `rotationZ` to `30`, or the toy's
+   `size` bigger, or a driver's `amplitude` to `120`. Refresh.
+   ✓ *Verify:* the world changed accordingly — that's authoring.
+4. **Break something on purpose:** misspell a field or point a driver at a
+   nonexistent object. Refresh with the browser console open.
+   ✓ *Verify:* the scene still loads and the console explains what it
+   ignored (`[scene:my-scene] …`) — documents warn, never die.
+5. **Make it yours:** add a second toy box, re-wire `patches` so channel 1
+   drives the shoulder, or add a `mix` node and drive a segment from both
+   knobs. The full schema is below; every field the reference scene uses is
+   documented.
+
+Sharing today means sending your JSON (or a PR adding it to `docs/scenes/`);
+URL-loadable external scenes and in-app editing are the next layers (see the
+layering plan at the bottom).
+
+**Next rung:** want your own hardware driving your own scene? Module channels
+are just `ch:N` refs — [PROTOCOL.md → Build your own module](PROTOCOL.md#build-your-own-module).
+
 ## Design rules
 
 1. **Everything the viewport shows comes from the document.** No scene-specific
