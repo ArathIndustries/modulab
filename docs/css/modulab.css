@@ -229,6 +229,64 @@
     font-size: 0.9rem;
 }
 
+/* Workspace layout: viewport + docked panels */
+.workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 1rem;
+    align-items: start;
+}
+@media (max-width: 900px) {
+    .workspace { grid-template-columns: 1fr; }
+}
+.ws-panel {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 0.8rem 0.9rem;
+}
+.ws-panel h3 {
+    margin: 0 0 0.6rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.inst-grid { display: flex; flex-direction: column; gap: 0.8rem; }
+.inst-card header {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-bottom: 0.15rem;
+}
+.inst-ch {
+    font-size: 0.8rem;
+    font-family: ui-monospace, monospace;
+    color: var(--text-secondary);
+    flex: 1;
+}
+.inst-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    font-family: ui-monospace, monospace;
+    color: var(--text-primary);
+    line-height: 1.1;
+    margin-bottom: 0.25rem;
+}
+.stage-msg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--status-serious);
+    padding: 1rem;
+    text-align: center;
+    font-family: ui-monospace, monospace;
+    font-size: 0.9rem;
+}
+.stage-msg[hidden] { display: none; }
+
 /* Sandbox */
 .patch-toggle {
     display: inline-flex;
