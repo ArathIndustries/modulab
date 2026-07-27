@@ -1,18 +1,17 @@
 /**
- * Workspace view — modulab's product surface. Loads a scenes-as-data
- * document (AUTHORING.md) and runs it in an engine-grade viewport, with
- * the instrument panel docked beside it (the Dashboard, folded in).
+ * Workspace view — modulab's product surface. The 3D scene IS the page:
+ * a full-bleed viewport with everything else floating over it as HUD
+ * (ruling 2026-07-27 — no side panels stealing viewport space; analysis
+ * overlays will live inside the scene itself, on this substrate).
  *
- * Nothing here is scene-specific: which scene runs comes from
- * ?scene=<id> (default pol-lever-arm), and everything inside the
- * viewport comes from that document via js/scene/engine.js.
+ * The scene comes from a scenes-as-data document via js/scene/engine.js;
+ * ?scene=<id> picks it (default pol-lever-arm).
  */
 import * as THREE from '../../vendor/three.module.js';
 import { OrbitControls } from '../../vendor/OrbitControls.js';
 import { RoomEnvironment } from '../../vendor/RoomEnvironment.js';
 import { stream } from '../stream.js';
 import { mountConnectBar } from '../components/connectbar.js';
-import { createStripChart } from '../components/stripchart.js';
 import { instantiateScene } from '../scene/engine.js';
 
 const SERIES_HEX = {
@@ -27,26 +26,17 @@ export function renderSandbox(container) {
 
     container.innerHTML = `
         <div class="view workspace-view">
-            <section id="connect-mount"></section>
-            <div class="workspace">
-                <div class="ws-main">
-                    <div class="twin-stage">
-                        <canvas class="twin-canvas"></canvas>
-                        <div class="stage-msg" hidden></div>
-                    </div>
-                    <div class="sandbox-bar">
-                        <button class="btn btn-ghost" id="ws-reset">Reset objects</button>
-                        <span class="patch-toggle" id="patch-toggle" hidden></span>
-                        <span class="hint" style="margin:0">Drag to orbit · wheel to zoom · right-drag to pan</span>
-                    </div>
-                    <div class="twin-readout" id="ws-readout"></div>
+            <div class="stage-full">
+                <canvas class="twin-canvas"></canvas>
+                <div class="stage-msg" hidden></div>
+                <div class="hud hud-tl" id="connect-mount"></div>
+                <div class="hud hud-tr">
+                    <span class="scene-name" id="scene-name"></span>
+                    <span class="patch-toggle" id="patch-toggle" hidden></span>
+                    <button class="btn btn-ghost btn-sm" id="ws-reset">Reset</button>
                 </div>
-                <aside class="ws-panel">
-                    <h3>Instruments</h3>
-                    <div id="inst-grid" class="inst-grid">
-                        <p class="hint" id="inst-empty">Channels appear when a module streams.</p>
-                    </div>
-                </aside>
+                <div class="hud hud-bl" id="ws-readout"></div>
+                <div class="hud hud-br">drag · orbit &nbsp; wheel · zoom &nbsp; right-drag · pan</div>
             </div>
         </div>
     `;
@@ -56,8 +46,7 @@ export function renderSandbox(container) {
     const stageMsg = container.querySelector('.stage-msg');
     const readout = container.querySelector('#ws-readout');
     const patchEl = container.querySelector('#patch-toggle');
-    const instGrid = container.querySelector('#inst-grid');
-    const instEmpty = container.querySelector('#inst-empty');
+    const sceneNameEl = container.querySelector('#scene-name');
     const mode = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
 
     // --- Viewport shell ---------------------------------------------------
@@ -87,48 +76,7 @@ export function renderSandbox(container) {
     scene.add(sun);
 
     // --- Stream state -------------------------------------------------------
-    const lastValues = new Map(); // ch -> raw value
-    const instruments = new Map(); // ch -> {chart, valueEl, hzEl, times}
-
-    function ensureInstrument(ch) {
-        if (instruments.has(ch)) return instruments.get(ch);
-        instEmpty.hidden = true;
-        const slot = (ch % 8) + 1;
-        const card = document.createElement('div');
-        card.className = 'inst-card';
-        card.innerHTML = `
-            <header>
-                <span class="series-chip" style="background: var(--series-${slot})"></span>
-                <span class="inst-ch">CH ${ch}</span>
-                <span class="ch-hz"></span>
-            </header>
-            <div class="inst-value">—</div>
-            <div class="chart-holder"></div>
-        `;
-        instGrid.appendChild(card);
-        const chart = createStripChart(card.querySelector('.chart-holder'), {
-            colorVar: `--series-${slot}`,
-        });
-        const entry = {
-            chart,
-            valueEl: card.querySelector('.inst-value'),
-            hzEl: card.querySelector('.ch-hz'),
-            times: [],
-        };
-        instruments.set(ch, entry);
-        return entry;
-    }
-
-    const offSample = stream.onSample(({ ch, value, t }) => {
-        lastValues.set(ch, value);
-        const inst = ensureInstrument(ch);
-        inst.chart.push(t, value);
-        inst.times.push(t);
-        if (inst.times.length > 64) inst.times.shift();
-        ensureChannelBadge(ch);
-    });
-
-    // --- Readout badges -------------------------------------------------------
+    const lastValues = new Map();
     const chBadges = new Map();
     const driverBadges = [];
 
@@ -141,18 +89,18 @@ export function renderSandbox(container) {
         chBadges.set(ch, el.querySelector('b'));
     }
 
+    const offSample = stream.onSample(({ ch, value }) => {
+        lastValues.set(ch, value);
+        ensureChannelBadge(ch);
+    });
+
     // --- Load the scene document ------------------------------------------------
     const sceneId = new URLSearchParams(window.location.search).get('scene') || 'pol-lever-arm';
-    let inst = null; // engine instance
+    let inst = null;
     let raf = null;
     let destroyed = false;
     let frame = 0;
     let lastT = performance.now();
-
-    function showStageMsg(text) {
-        stageMsg.hidden = false;
-        stageMsg.textContent = text;
-    }
 
     (async () => {
         let def;
@@ -161,7 +109,8 @@ export function renderSandbox(container) {
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             def = await r.json();
         } catch (err) {
-            showStageMsg(`Scene '${sceneId}' failed to load: ${err.message}`);
+            stageMsg.hidden = false;
+            stageMsg.textContent = `Scene '${sceneId}' failed to load: ${err.message}`;
             return;
         }
 
@@ -169,8 +118,8 @@ export function renderSandbox(container) {
             scene,
             getChannel: (n) => (lastValues.has(n) ? lastValues.get(n) / 1023 : null),
         });
+        sceneNameEl.textContent = inst.meta.name ?? sceneId;
 
-        // Camera / controls from the document
         const cam = inst.env.camera ?? { position: [0, 4, 12], target: [0, 0, 0], fov: 60 };
         camera.fov = cam.fov ?? 60;
         camera.position.set(...cam.position);
@@ -189,7 +138,6 @@ export function renderSandbox(container) {
             scene.add(axes);
         }
 
-        // Patch selector from the document's named driver sets
         if (inst.patchNames.length > 1) {
             const key = `modulab-patch-${inst.meta.id}`;
             const saved = localStorage.getItem(key);
@@ -207,11 +155,10 @@ export function renderSandbox(container) {
             }
         }
 
-        // Driver readout badges (generic: one per driven object)
         for (const d of inst.driverReadout()) {
             const el = document.createElement('span');
             el.className = 'twin-badge';
-            el.innerHTML = `${d.label}.rotZ <b>—</b>`;
+            el.innerHTML = `${d.label} <b>—</b>`;
             readout.appendChild(el);
             driverBadges.push(el.querySelector('b'));
         }
@@ -222,7 +169,8 @@ export function renderSandbox(container) {
     // --- Render loop --------------------------------------------------------
     function sizeRenderer() {
         const w = canvas.parentElement.clientWidth;
-        const h = Math.max(340, Math.round(w * 0.55));
+        const h = canvas.parentElement.clientHeight;
+        if (!w || !h) return;
         renderer.setSize(w, h, false);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
         camera.aspect = w / h;
@@ -248,14 +196,6 @@ export function renderSandbox(container) {
                     if (driverBadges[i]) driverBadges[i].textContent = `${d.deg.toFixed(0)}°`;
                 });
             }
-            const nowMs = performance.now();
-            for (const i of instruments.values()) {
-                i.times = i.times.filter((t) => nowMs - t < 2000);
-                i.hzEl.textContent = i.times.length > 1 ? `${(i.times.length / 2).toFixed(0)} Hz` : '';
-            }
-            for (const [ch, i] of instruments) {
-                i.valueEl.textContent = (lastValues.get(ch) ?? 0).toFixed(1);
-            }
         }
         controls.update();
         renderer.render(scene, camera);
@@ -269,7 +209,6 @@ export function renderSandbox(container) {
             offSample();
             unmountBar();
             ro.disconnect();
-            for (const i of instruments.values()) i.chart.destroy();
             inst?.dispose();
             renderer.dispose();
             scene.traverse((o) => {

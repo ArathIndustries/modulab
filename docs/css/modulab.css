@@ -229,50 +229,74 @@
     font-size: 0.9rem;
 }
 
-/* Workspace layout: viewport + docked panels */
-.workspace {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 300px;
-    gap: 1rem;
-    align-items: start;
+/* Workspace: the 3D scene IS the page; all chrome floats as HUD */
+.main-content:has(.workspace-view) {
+    padding: 0;
+    display: flex;
 }
-@media (max-width: 900px) {
-    .workspace { grid-template-columns: 1fr; }
+.workspace-view {
+    max-width: none;
+    width: 100%;
+    flex: 1;
+    display: flex;
+    margin: 0;
 }
-.ws-panel {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-light);
-    border-radius: 8px;
-    padding: 0.8rem 0.9rem;
+.stage-full {
+    position: relative;
+    flex: 1;
+    min-height: 320px;
+    overflow: hidden;
 }
-.ws-panel h3 {
-    margin: 0 0 0.6rem;
-    font-size: 0.8rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-muted);
+.stage-full .twin-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
 }
-.inst-grid { display: flex; flex-direction: column; gap: 0.8rem; }
-.inst-card header {
+.hud {
+    position: absolute;
+    z-index: 5;
     display: flex;
     align-items: center;
-    gap: 0.45rem;
-    margin-bottom: 0.15rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    background: color-mix(in srgb, var(--bg-card) 72%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 0.5rem 0.65rem;
+    max-width: calc(100% - 1.5rem);
 }
-.inst-ch {
-    font-size: 0.8rem;
+.hud:empty { display: none; }
+.hud-tl { top: 0.75rem; left: 0.75rem; }
+.hud-tr { top: 0.75rem; right: 0.75rem; }
+.hud-bl { bottom: 0.75rem; left: 0.75rem; }
+.hud-br {
+    bottom: 0.75rem;
+    right: 0.75rem;
+    font-size: 0.72rem;
+    color: var(--text-muted);
     font-family: ui-monospace, monospace;
+    background: transparent;
+    border: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+/* connect bar rendered inside the HUD: compact, no hint paragraph */
+.hud .connect-bar { margin: 0; gap: 0.4rem; }
+.hud .btn { padding: 0.4rem 0.75rem; font-size: 0.85rem; }
+.hud .hint { display: none; }
+.btn-sm { padding: 0.35rem 0.7rem; font-size: 0.82rem; }
+.hud .patch-toggle { background: transparent; border: none; padding: 0.15rem 0; }
+.scene-name {
+    font-size: 0.82rem;
     color: var(--text-secondary);
-    flex: 1;
-}
-.inst-value {
-    font-size: 1.4rem;
-    font-weight: 700;
     font-family: ui-monospace, monospace;
-    color: var(--text-primary);
-    line-height: 1.1;
-    margin-bottom: 0.25rem;
+    padding-right: 0.25rem;
 }
+.hud .twin-badge { background: transparent; border: none; padding: 0.1rem 0.3rem; }
 .stage-msg {
     position: absolute;
     inset: 0;
@@ -284,6 +308,7 @@
     text-align: center;
     font-family: ui-monospace, monospace;
     font-size: 0.9rem;
+    z-index: 4;
 }
 .stage-msg[hidden] { display: none; }
 
