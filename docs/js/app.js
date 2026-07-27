@@ -31,8 +31,12 @@ router
 initTheme();
 router.start();
 
-// ?demo=1 auto-starts the synthetic module on any view — used by headless
-// verification and by visitors with no hardware.
-if (new URLSearchParams(window.location.search).has('demo')) {
+// Auto-start an input source from the URL on any view — used by headless
+// verification and by visitors with no hardware. ?manual=1 (sliders,
+// optionally &ch0=..&ch1=.. presets) takes precedence over ?demo=1.
+const bootParams = new URLSearchParams(window.location.search);
+if (bootParams.has('manual')) {
+    import('./transports/manual.js').then(({ connectManual }) => stream.connect(connectManual));
+} else if (bootParams.has('demo')) {
     stream.connect(connectDemo);
 }

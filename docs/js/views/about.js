@@ -22,6 +22,10 @@ export function renderAbout(container) {
                     firmware on a BLE-capable board such as the Arduino Nano 33 BLE.</li>
                 <li><strong>Demo signal</strong> — no hardware at all; synthetic channels
                     exercise the whole pipeline.</li>
+                <li><strong>Manual sliders</strong> — drive every channel by hand from an
+                    on-screen panel (add channels as needed). Same wire protocol as real
+                    firmware, so anything built against it works unchanged when hardware
+                    replaces the sliders. URL presets: <code>?manual=1&amp;ch0=200&amp;ch1=900</code>.</li>
             </ul>
 
             <h2>Hardware</h2>

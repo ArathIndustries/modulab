@@ -7,6 +7,7 @@ import { stream } from '../stream.js';
 import { serialSupported, connectSerial } from '../transports/serial.js';
 import { bleSupported, connectBle } from '../transports/ble.js';
 import { connectDemo } from '../transports/demo.js';
+import { connectManual } from '../transports/manual.js';
 
 export function mountConnectBar(container) {
     container.innerHTML = `
@@ -14,6 +15,7 @@ export function mountConnectBar(container) {
             <button class="btn" data-t="serial">Connect USB</button>
             <button class="btn" data-t="ble">Connect Bluetooth</button>
             <button class="btn btn-ghost" data-t="demo">Demo signal</button>
+            <button class="btn btn-ghost" data-t="manual">Manual sliders</button>
             <button class="btn btn-ghost" data-t="disconnect" hidden>Disconnect</button>
             <span class="status-pill" data-state="idle">idle</span>
             <span class="module-badge" hidden></span>
@@ -38,7 +40,7 @@ export function mountConnectBar(container) {
             : (s.label ? `${s.state} · ${s.label}` : s.state);
         const connected = s.state === 'connected';
         btn('disconnect').hidden = !connected;
-        for (const t of ['serial', 'ble', 'demo']) btn(t).hidden = connected;
+        for (const t of ['serial', 'ble', 'demo', 'manual']) btn(t).hidden = connected;
         if (!connected) { badge.hidden = true; badge.textContent = ''; }
     }
     function renderHello(h) {
@@ -50,6 +52,7 @@ export function mountConnectBar(container) {
     btn('serial').addEventListener('click', () => stream.connect(connectSerial));
     btn('ble').addEventListener('click', () => stream.connect(connectBle));
     btn('demo').addEventListener('click', () => stream.connect(connectDemo));
+    btn('manual').addEventListener('click', () => stream.connect(connectManual));
     btn('disconnect').addEventListener('click', () => stream.disconnect());
 
     renderStatus(stream.status);
