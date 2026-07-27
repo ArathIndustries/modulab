@@ -20,6 +20,8 @@
  */
 import * as THREE from '../../vendor/three.module.js';
 import * as CANNON from '../../vendor/cannon-es.js';
+import { OrbitControls } from '../../vendor/OrbitControls.js';
+import { RoomEnvironment } from '../../vendor/RoomEnvironment.js';
 import { stream } from '../stream.js';
 import { mountConnectBar } from '../components/connectbar.js';
 import { parseOBJ } from '../lib/objparser.js';
@@ -57,7 +59,11 @@ export function renderSandbox(container) {
             </div>
             <div class="sandbox-bar">
                 <button class="btn btn-ghost" id="toy-reset">Drop the toy again</button>
-                <span class="hint" style="margin:0">Knob 0 swings the shoulder; both knobs couple into the elbow (that's the scene's own node patch). Catch the cube.</span>
+                <span class="patch-toggle" id="patch-toggle">
+                    <label><input type="radio" name="sb-patch" value="independent"> independent joints</label>
+                    <label><input type="radio" name="sb-patch" value="pol"> PoL original patch</label>
+                </span>
+                <span class="hint" style="margin:0">Drag to orbit, wheel to zoom, right-drag to pan. Catch the cube.</span>
             </div>
             <div class="twin-readout" id="sb-readout"></div>
         </div>
@@ -70,17 +76,50 @@ export function renderSandbox(container) {
 
     // --- Three scene ---------------------------------------------------
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(mode === 'light' ? 0xdfe3ea : 0x101318);
 
-    const camera = new THREE.PerspectiveCamera(60, 2, 0.1, 100);
-    camera.position.set(CAMERA_POS.x, CAMERA_POS.y, CAMERA_POS.z);
-    camera.lookAt(CAMERA_POS.x, CAMERA_POS.y, 0);
+    // Studio-style image-based lighting: PBR materials read like an engine
+    // viewport instead of flat-lit primitives.
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-    const sun = new THREE.DirectionalLight(0xffffff, 1.6);
-    sun.position.set(-4, 6, 8);
+    const camera = new THREE.PerspectiveCamera(60, 2, 0.1, 200);
+    camera.position.set(CAMERA_POS.x, CAMERA_POS.y, CAMERA_POS.z);
+
+    const controls = new OrbitControls(camera, canvas);
+    controls.target.set(CAMERA_POS.x, 0, 0);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.maxDistance = 80;
+    controls.update();
+
+    const sun = new THREE.DirectionalLight(0xffffff, 2.4);
+    sun.position.set(-10, 14, 12);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.left = -28;
+    sun.shadow.camera.right = 28;
+    sun.shadow.camera.top = 20;
+    sun.shadow.camera.bottom = -12;
+    sun.shadow.camera.far = 60;
+    sun.shadow.bias = -0.0004;
     scene.add(sun);
+
+    // Engine-style reference: ground-plane grid at the floor's top + axes
+    const grid = new THREE.GridHelper(80, 80,
+        mode === 'light' ? 0xaab0ba : 0x3a4150,
+        mode === 'light' ? 0xd3d7de : 0x232833);
+    grid.position.y = FLOOR.pos[1] + FLOOR.size[1] / 2 + 0.01;
+    scene.add(grid);
+    const axes = new THREE.AxesHelper(2.2);
+    axes.position.set(CAMERA_POS.x, grid.position.y + 0.01, 0);
+    scene.add(axes);
 
     const worldMat = new THREE.MeshStandardMaterial({
         color: mode === 'light' ? 0x9aa1ad : 0x3a4150, roughness: 0.85,
@@ -101,6 +140,8 @@ export function renderSandbox(container) {
         const geo = new THREE.Mesh(new THREE.BoxGeometry(...size), worldMat);
         geo.position.set(pos[0], pos[1], 0);
         geo.rotation.z = rotZ;
+        geo.castShadow = true;
+        geo.receiveShadow = true;
         scene.add(geo);
         const body = new CANNON.Body({
             type: CANNON.Body.STATIC,
@@ -118,6 +159,8 @@ export function renderSandbox(container) {
     // Toy: dynamic, frozen to the XY plane (Unity constraint mask 56)
     const toyMesh = new THREE.Mesh(
         new THREE.BoxGeometry(TOY.size, TOY.size, TOY.size), toyMat);
+    toyMesh.castShadow = true;
+    toyMesh.receiveShadow = true;
     scene.add(toyMesh);
     const toyBody = new CANNON.Body({
         mass: 1,
@@ -161,6 +204,8 @@ export function renderSandbox(container) {
         // placeholder box until the OBJ resolves (swapped in below)
         const ph = new THREE.Mesh(new THREE.BoxGeometry(SEG_LEN, 0.6, 1), armMat);
         ph.position.x = SEG_LEN / 2;
+        ph.castShadow = true;
+        ph.receiveShadow = true;
         holder.add(ph);
         return holder;
     }
@@ -177,6 +222,8 @@ export function renderSandbox(container) {
             for (const holder of [shoulderVis, elbowVis]) {
                 holder.clear();
                 const mesh = new THREE.Mesh(geo, armMat);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
                 mesh.scale.setScalar(LEVER_SCALE);
                 // stand the flat part up: OBJ thickness runs +y (its print
                 // bed axis); after this rotation the thickness spans
@@ -219,14 +266,32 @@ export function renderSandbox(container) {
     let a0 = SHOULDER.baseline;
     let a1 = ELBOW.baseline;
 
+    // Two patches, Arath's ruling 2026-07-27: independent joints by default
+    // (predictable — one knob, one joint), the decoded PoL cross-coupled
+    // patch preserved as a selectable preset.
+    const PATCH_KEY = 'modulab-sb-patch';
+    let patch = localStorage.getItem(PATCH_KEY) === 'pol' ? 'pol' : 'independent';
+    for (const radio of container.querySelectorAll('input[name="sb-patch"]')) {
+        radio.checked = radio.value === patch;
+        radio.addEventListener('change', () => {
+            patch = radio.value;
+            localStorage.setItem(PATCH_KEY, patch);
+        });
+    }
+
     function driveArm() {
         const n0 = (lastValues.get(0) ?? 511.5) / 1023;
         const n1 = (lastValues.get(1) ?? 511.5) / 1023;
-        const gen = 1; // ContinuousGenerator: constant 1 (the scene's offset kludge)
-        const mixAdd = gen + n0;              // MixNode "add"
-        const mixSub = (-1 * n1) - mixAdd;    // MixNode "sub, -1"
         const target0 = SHOULDER.baseline + SHOULDER.amp * (SHOULDER.invert ? -n0 : n0);
-        const target1 = ELBOW.baseline + ELBOW.amp * mixSub;
+        let target1;
+        if (patch === 'pol') {
+            const gen = 1; // ContinuousGenerator: constant 1 (the scene's offset kludge)
+            const mixAdd = gen + n0;              // MixNode "add"
+            const mixSub = (-1 * n1) - mixAdd;    // MixNode "sub, -1"
+            target1 = ELBOW.baseline + ELBOW.amp * mixSub;
+        } else {
+            target1 = ELBOW.baseline - ELBOW.amp * n1; // elbow follows knob 1 alone
+        }
         a0 += (target0 - a0) * 0.2;
         a1 += (target1 - a1) * 0.2;
         shoulder.rotation.z = a0;
@@ -284,6 +349,7 @@ export function renderSandbox(container) {
             badges[2].textContent = `${(a0 / DEG).toFixed(0)}°`;
             badges[3].textContent = `${(a1 / DEG).toFixed(0)}°`;
         }
+        controls.update();
         renderer.render(scene, camera);
     }
     raf = requestAnimationFrame(tick);

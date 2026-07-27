@@ -230,6 +230,18 @@
 }
 
 /* Sandbox */
+.patch-toggle {
+    display: inline-flex;
+    gap: 0.9rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    font-family: ui-monospace, monospace;
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    padding: 0.3rem 0.7rem;
+    background: var(--bg-secondary);
+}
+.patch-toggle label { display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; }
 .sandbox-bar {
     display: flex;
     flex-wrap: wrap;
