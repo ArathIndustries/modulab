@@ -6,6 +6,29 @@
 import * as THREE from '../../vendor/three.module.js';
 import { stream } from '../stream.js';
 import { mountConnectBar } from '../components/connectbar.js';
+import { parseOBJ } from '../lib/objparser.js';
+
+// The real printed part: PowderOfLife's 60 mm potentiometer lever (see
+// models/README.md for provenance). Loaded once, shared by every twin.
+const MODEL_URL = 'models/potentiometer-lever-60mm.obj';
+const MODEL_SCALE = 0.025; // mm -> scene units (66 mm arm -> 1.65 u)
+let leverGeometryPromise = null;
+
+function loadLeverGeometry() {
+    leverGeometryPromise ??= fetch(MODEL_URL)
+        .then((r) => {
+            if (!r.ok) throw new Error(`${MODEL_URL}: HTTP ${r.status}`);
+            return r.text();
+        })
+        .then((text) => {
+            const { positions, normals } = parseOBJ(text);
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+            return geo;
+        });
+    return leverGeometryPromise;
+}
 
 const SWEEP = (270 * Math.PI) / 180; // physical pot travel
 const SERIES_HEX = {
@@ -85,19 +108,24 @@ export function renderTwin(container) {
         shaft.position.y = 0.55;
         group.add(shaft);
 
-        // The lever arm — pivots about the shaft's vertical axis
+        // The lever arm — the actual printed-part geometry, pivoting about
+        // the shaft's vertical axis exactly like the physical lever on the pot.
         const arm = new THREE.Group();
-        arm.position.y = 0.8;
+        arm.position.y = 0.72; // hub sleeves over the shaft top
         const armMat = new THREE.MeshStandardMaterial({
-            color, roughness: 0.35, metalness: 0.15,
-            emissive: color, emissiveIntensity: 0.12,
+            color, roughness: 0.45, metalness: 0.05, // printed-plastic look
+            emissive: color, emissiveIntensity: 0.08,
         });
-        const bar = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.12, 0.2), armMat);
-        bar.position.x = 0.65; // one-sided lever, like the printed part
-        arm.add(bar);
-        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.14, 24, 16), armMat);
-        tip.position.x = 1.4;
-        arm.add(tip);
+        if (leverGeometry) {
+            const lever = new THREE.Mesh(leverGeometry, armMat);
+            lever.scale.setScalar(MODEL_SCALE);
+            arm.add(lever);
+        } else {
+            // model failed to load — degrade visibly, don't die
+            const bar = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.12, 0.2), armMat);
+            bar.position.x = 0.65;
+            arm.add(bar);
+        }
         group.add(arm);
 
         scene.add(group);
@@ -113,12 +141,32 @@ export function renderTwin(container) {
         return twin;
     }
 
-    const offSample = stream.onSample(({ ch, value }) => {
+    // Twins are created only after the lever model resolves, so channels
+    // arriving early are stashed and flushed on load.
+    let leverGeometry = null;
+    let modelReady = false;
+    const pending = new Map(); // ch -> latest value seen before model load
+
+    loadLeverGeometry()
+        .then((geo) => { leverGeometry = geo; })
+        .catch((err) => { console.warn('lever model unavailable, using fallback:', err.message); })
+        .finally(() => {
+            modelReady = true;
+            for (const [ch, value] of pending) applySample(ch, value);
+            pending.clear();
+        });
+
+    function applySample(ch, value) {
         let t = twins.get(ch);
         if (!t) t = createTwin(ch);
         t.last = value;
         // 0-1023 -> -135°..+135°, matching the physical pot sweep
         t.target = (value / 1023 - 0.5) * SWEEP;
+    }
+
+    const offSample = stream.onSample(({ ch, value }) => {
+        if (!modelReady) { pending.set(ch, value); return; }
+        applySample(ch, value);
     });
 
     // --- Render loop -----------------------------------------------------

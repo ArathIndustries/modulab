@@ -41,7 +41,10 @@ export function renderAbout(container) {
             <a href="https://github.com/andrewfrueh/PowderOfLife" target="_blank" rel="noopener">Powder Of Life</a>
             and lessons learned porting it to the Nano 33 BLE. modulab is a
             clean-room implementation — no PowderOfLife code — that stays
-            wire-compatible with its serial frames. MIT licensed.</p>
+            wire-compatible with its serial frames. Code is MIT licensed. The
+            Twin view renders Frueh's actual printable 60&nbsp;mm potentiometer
+            lever model, used with attribution under its upstream license
+            (see <code>models/README.md</code>).</p>
 
             <p><a href="${CONFIG.REPO_URL}" target="_blank" rel="noopener">Source on GitHub ↗</a></p>
         </div>
