@@ -1,0 +1,15 @@
+# local-only Claude context
+CLAUDE.local.md
+.claude/settings.local.json
+
+# environment / secrets (none expected — static site — but the rule stands)
+.env
+.env.local
+
+# OS noise
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# arduino build artifacts
+firmware/**/build/

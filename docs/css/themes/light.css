@@ -1,0 +1,43 @@
+/**
+ * Light theme tokens.
+ *
+ * ORIGIN: see dark.css header — same extraction, placeholder values.
+ */
+[data-theme="light"] {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f6f7f9;
+    --bg-tertiary: #eaecf0;
+    --bg-card: #ffffff;
+    --bg-hover: #f0f1f4;
+
+    --text-primary: #1a1c20;
+    --text-secondary: #4a4e57;
+    --text-muted: #767b85;
+    --text-inverse: #ffffff;
+
+    --border-color: #dfe2e7;
+    --border-light: #eaecf0;
+
+    --accent-primary: #3563e0;
+    --accent-primary-hover: #2a4fc0;
+    --accent-secondary: #7c4fd6;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* modulab chart tokens — light column of the validated categorical palette */
+[data-theme="light"] {
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --series-3: #1baf7a;
+    --series-4: #eda100;
+    --series-5: #e87ba4;
+    --series-6: #008300;
+    --series-7: #4a3aa7;
+    --series-8: #e34948;
+    --chart-grid: rgba(26, 28, 32, 0.08);
+    --status-good: #1baf7a;
+    --status-serious: #e34948;
+}

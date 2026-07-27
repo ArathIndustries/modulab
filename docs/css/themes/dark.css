@@ -1,0 +1,50 @@
+/**
+ * Dark theme tokens.
+ *
+ * ORIGIN: variable set (names + categories: bg/text/border/accent/shadow)
+ * extracted from openchambers frontend/css/themes/dark.css. Values are
+ * NOT copied — this is a neutral placeholder palette. The
+ * domain-specific relevance-* and action-* token groups from the source
+ * (meeting-relevance colors, action-type badge colors) are omitted; they
+ * are product vocabulary, not part of the reusable pattern. base.css
+ * consumes only these variables — never a hardcoded color.
+ */
+[data-theme="dark"] {
+    --bg-primary: #14161a;
+    --bg-secondary: #1c1f26;
+    --bg-tertiary: #262a33;
+    --bg-card: #1c1f26;
+    --bg-hover: #262a33;
+
+    --text-primary: #e8eaed;
+    --text-secondary: #b8bcc4;
+    --text-muted: #7d828d;
+    --text-inverse: #14161a;
+
+    --border-color: #2e323b;
+    --border-light: #262a33;
+
+    --accent-primary: #5b8def;
+    --accent-primary-hover: #7ba1f3;
+    --accent-secondary: #9d7bf0;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.55);
+}
+
+/* modulab chart tokens — dark column of the validated categorical palette
+   (dataviz reference instance; series color follows the channel, never rank) */
+[data-theme="dark"] {
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --series-6: #008300;
+    --series-7: #9085e9;
+    --series-8: #e66767;
+    --chart-grid: rgba(232, 234, 237, 0.08);
+    --status-good: #199e70;
+    --status-serious: #e66767;
+}
