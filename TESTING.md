@@ -38,14 +38,30 @@ Existing **Powder Of Life** sketches work unchanged (same wire protocol).
 
 ## Path B — Arduino Nano 33 BLE / BLE Sense: USB + Bluetooth
 
-1. Arduino IDE → Boards Manager → install **Arduino Mbed OS Nano Boards**;
-   Library Manager → install **ArduinoBLE**.
-2. Flash [`firmware/modulab_ble/modulab_ble.ino`](firmware/modulab_ble/modulab_ble.ino)
-   (board: Arduino Nano 33 BLE).
-3. ⚠ **Pots go to 3V3, never 5 V** — the nRF52840's pins are not 5 V tolerant.
-4. USB: as Path A. Bluetooth: **Connect Bluetooth** → device `modulab-knob2`
-   (works on desktop Chrome/Edge and **Android Chrome**; iPhones can't —
-   iOS has no Web Bluetooth).
+The modulab firmware streams over USB serial and Bluetooth at the same time.
+
+1. Install the [Arduino IDE](https://www.arduino.cc/en/software) (2.x).
+2. Tools → Board → Boards Manager → search **Mbed OS Nano** → install
+   **Arduino Mbed OS Nano Boards** (several minutes, it's a full toolchain).
+3. Sketch → Include Library → Manage Libraries → install **ArduinoBLE**.
+4. Get the firmware: open
+   [the raw sketch file](https://raw.githubusercontent.com/ArathIndustries/modulab/main/firmware/modulab_ble/modulab_ble.ino),
+   select all, copy, and paste over a new blank sketch (it is a single file).
+5. Tools → Board → Arduino Mbed OS Nano Boards → **Arduino Nano 33 BLE**;
+   Tools → Port → your board. Upload (first compile is slow — minutes, normal).
+   If the upload hangs or the port vanishes: **double-tap the reset button**
+   (the LED starts pulsing = bootloader), pick the new port that appears,
+   upload again.
+6. Verify: Serial Monitor at **9600** shows a run-on stream like
+   `<0:512.0><1:334.0>` plus `<h:knob2:2>` every 5 seconds. **Close the
+   monitor afterwards** — it holds the port.
+7. ⚠ **Pots go to 3V3, never 5 V** — the nRF52840's pins are not 5 V tolerant.
+   Outer legs → 3V3 and GND, wipers → A0 and A1. A bare board streams
+   floating-pin noise, which is fine for a first test.
+8. USB: app → **Connect USB**. Bluetooth: **Connect Bluetooth** → device
+   `modulab-knob2` (desktop Chrome/Edge and **Android Chrome**; iPhones
+   can't — iOS has no Web Bluetooth). Bonus test: open the app on an Android
+   phone, no cable at all.
 
 ## What success looks like
 
