@@ -7,6 +7,7 @@ import { CONFIG } from '../config.js';
 
 const NAV_ITEMS = [
     { label: 'Dashboard', route: 'dashboard' },
+    { label: 'Twin', route: 'twin' },
     { label: 'About', route: 'about' },
 ];
 

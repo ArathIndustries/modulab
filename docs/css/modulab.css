@@ -181,6 +181,53 @@
     font-family: ui-monospace, monospace;
 }
 
+/* Twin view */
+.twin-stage {
+    position: relative;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-secondary);
+}
+.twin-canvas { display: block; width: 100%; }
+.twin-empty[hidden] { display: none; }
+.twin-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    pointer-events: none;
+    padding: 1rem;
+    text-align: center;
+}
+.twin-readout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin-top: 0.8rem;
+}
+.twin-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-family: ui-monospace, monospace;
+}
+.twin-badge b {
+    color: var(--text-primary);
+    font-size: 1rem;
+    min-width: 3.5ch;
+    text-align: right;
+}
+
 /* About view */
 .about { max-width: 46rem; }
 .about h2 { margin-top: 1.4rem; }
