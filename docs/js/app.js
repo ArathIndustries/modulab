@@ -21,12 +21,12 @@ function setView(route, renderFn, params = {}) {
 }
 
 router
+    .add('sandbox', () => setView('sandbox', renderSandbox))
     .add('dashboard', () => setView('dashboard', renderDashboard))
     .add('twin', () => setView('twin', renderTwin))
-    .add('sandbox', () => setView('sandbox', renderSandbox))
     .add('about', () => setView('about', renderAbout))
-    .default('dashboard')
-    .notFound(() => setView('dashboard', renderDashboard));
+    .default('sandbox')
+    .notFound(() => setView('sandbox', renderSandbox));
 
 initTheme();
 router.start();

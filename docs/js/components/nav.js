@@ -6,9 +6,9 @@ import { toggleTheme, getTheme } from '../theme.js';
 import { CONFIG } from '../config.js';
 
 const NAV_ITEMS = [
+    { label: 'Sandbox', route: 'sandbox' },
     { label: 'Dashboard', route: 'dashboard' },
     { label: 'Twin', route: 'twin' },
-    { label: 'Sandbox', route: 'sandbox' },
     { label: 'About', route: 'about' },
 ];
 
@@ -18,7 +18,7 @@ export function renderNav(container, activeRoute) {
 
     container.innerHTML = `
         <nav class="nav">
-            <a class="nav-brand" href="#/dashboard">modulab<span class="nav-version">v${CONFIG.APP_VERSION}</span></a>
+            <a class="nav-brand" href="#/sandbox">modulab<span class="nav-version">v${CONFIG.APP_VERSION}</span></a>
             <ul class="nav-links">
                 ${NAV_ITEMS.map(item => `
                     <li><a class="nav-link ${activeRoute === item.route ? 'active' : ''}"
