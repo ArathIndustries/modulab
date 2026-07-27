@@ -37,7 +37,12 @@ const SEG_LEN = 6;
 const SHOULDER = { baseline: 60 * DEG, amp: 250 * DEG, invert: true };
 const ELBOW = { baseline: -30 * DEG, amp: 250 * DEG };
 const MODEL_URL = 'models/potentiometer-lever-60mm.obj';
-const LEVER_SCALE = SEG_LEN / 66; // 66 mm part spans one 6-unit segment
+// The part's holes sit at x=0 and x=60 mm (it IS the "60 mm" lever), so
+// hole-to-hole must equal SEG_LEN: scale = 6/60 = 0.1, Unity's own import
+// scale. (Scaling by the 66 mm total length put the far hole 0.55 units
+// short of the child pivot — the visible misalignment.)
+const LEVER_SCALE = SEG_LEN / 60;
+const LEVER_THICKNESS = 6.51 * LEVER_SCALE; // part thickness, for layer stacking
 
 let active = null;
 
@@ -141,7 +146,10 @@ export function renderSandbox(container) {
     const shoulder = new THREE.Group();
     root.add(shoulder);
     const elbow = new THREE.Group();
-    elbow.position.set(SEG_LOCAL[0], SEG_LOCAL[1], 0);
+    // The physical assembly stacks each lever one part-thickness above the
+    // one it bolts onto — parallel planes, so the arms can fold past each
+    // other without intersecting (the geometry-breaking overlap otherwise).
+    elbow.position.set(SEG_LOCAL[0], SEG_LOCAL[1], LEVER_THICKNESS + 0.01);
     shoulder.add(elbow);
 
     // Segment visual: the printed lever model, arm pointing from the pivot
@@ -171,9 +179,9 @@ export function renderSandbox(container) {
                 const mesh = new THREE.Mesh(geo, armMat);
                 mesh.scale.setScalar(LEVER_SCALE);
                 // stand the flat part up: OBJ thickness runs +y (its print
-                // bed axis); rotate so it faces the camera like a side view
+                // bed axis); after this rotation the thickness spans
+                // z in [-LEVER_THICKNESS, 0] — each segment is one layer
                 mesh.rotation.x = 90 * DEG;
-                mesh.position.z = -0.08;
                 holder.add(mesh);
             }
         })
