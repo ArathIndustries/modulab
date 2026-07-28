@@ -16,8 +16,14 @@
  * liveTransform(id)
  */
 
-const TYPE_LABEL = { box: 'Box', group: 'Joint', model: 'Part' };
+const TYPE_LABEL = { box: 'Box', group: 'Anchor', model: 'Part' };
 const BODY_LABEL = { static: 'fixed', dynamic: 'physics', kinematic: 'driven' };
+const CHIP_TIP = {
+    'Box · fixed': 'Scenery: solid, collides, never moves.',
+    'Box · physics': 'Falls, tumbles, gets pushed — obeys gravity and collisions.',
+    'Anchor': 'An invisible point other objects attach to — a mount or a pivot. Has no shape of its own.',
+    'Part · driven': 'A real part moved by a knob. It pushes physics objects but nothing pushes it back.',
+};
 
 const RESPONSE_PRESETS = [
     { value: 0, label: 'instant' },
@@ -94,7 +100,7 @@ export function mountInspector(container, ctx) {
         const firstMat = Object.keys(doc.materials ?? {})[0];
         let obj;
         if (kind === 'group') {
-            obj = { id: uniqueId(doc, 'joint'), type: 'group', position: [0, 2, 0] };
+            obj = { id: uniqueId(doc, 'anchor'), type: 'group', position: [0, 2, 0] };
         } else if (kind === 'model') {
             const model = Object.keys(doc.models ?? {})[0];
             obj = {
@@ -113,6 +119,28 @@ export function mountInspector(container, ctx) {
         doc.objects.push(obj);
         ctx.setSelected(obj.id);
         ctx.commit({ rebuild: true });
+    }
+
+    /** Rename an object and cascade to every reference in the document. */
+    function renameObject(oldId, newId) {
+        const doc = ctx.getDoc();
+        newId = newId.trim();
+        if (!newId || newId === oldId) return false;
+        if (doc.objects.some((o) => o.id === newId)) {
+            alert(`There is already an object named '${newId}'.`);
+            return false;
+        }
+        for (const o of doc.objects) {
+            if (o.id === oldId) o.id = newId;
+            if (o.parent === oldId) o.parent = newId;
+        }
+        for (const p of Object.keys(doc.patches ?? {})) {
+            for (const d of doc.patches[p]) if (d.target === oldId) d.target = newId;
+        }
+        for (const ov of doc.overlays ?? []) if (ov.attach === oldId) ov.attach = newId;
+        ctx.setSelected(newId);
+        ctx.commit({ rebuild: true });
+        return true;
     }
 
     function deleteObject(id) {
@@ -157,6 +185,7 @@ export function mountInspector(container, ctx) {
             <b>Inspector</b>
             <span class="draft-chip" ${ctx.isDraft() ? '' : 'hidden'}>edited</span>
             <span class="insp-head-btns">
+                <button data-a="new" title="Start from the blank bench scene">New</button>
                 <button data-a="export" title="Download this scene as a JSON file">Save file</button>
                 <button data-a="import" title="Open a scene JSON file">Open</button>
                 <button data-a="revert" title="Throw away your edits, restore the original scene" ${ctx.isDraft() ? '' : 'hidden'}>Undo all</button>
@@ -164,6 +193,12 @@ export function mountInspector(container, ctx) {
             <input type="file" accept=".json,application/json" hidden>
         `;
         const fileInput = head.querySelector('input[type=file]');
+        head.querySelector('[data-a="new"]').addEventListener('click', () => {
+            const q = new URLSearchParams(window.location.search);
+            q.set('scene', 'blank');
+            q.set('edit', '1');
+            window.location.search = q.toString();
+        });
         head.querySelector('[data-a="export"]').addEventListener('click', ctx.exportDoc);
         head.querySelector('[data-a="import"]').addEventListener('click', () => fileInput.click());
         head.querySelector('[data-a="revert"]').addEventListener('click', () => {
@@ -196,7 +231,9 @@ export function mountInspector(container, ctx) {
             li.style.paddingLeft = `${0.4 + depthOf(o) * 0.9}rem`;
             const chips = [TYPE_LABEL[o.type] ?? o.type];
             if (o.body) chips.push(BODY_LABEL[o.body] ?? o.body);
-            li.innerHTML = `<b>${o.id}</b><span class="t-chip">${chips.join(' · ')}</span>`;
+            const chipText = chips.join(' · ');
+            li.title = CHIP_TIP[chipText] ?? '';
+            li.innerHTML = `<b>${o.id}</b><span class="t-chip">${chipText}</span>`;
             if (o.id === selected) li.className = 'selected';
             li.addEventListener('click', () => ctx.setSelected(o.id === selected ? null : o.id));
             tree.appendChild(li);
@@ -208,7 +245,7 @@ export function mountInspector(container, ctx) {
         const kinds = [
             { value: 'box-dynamic', label: 'Box — falls & collides' },
             { value: 'box-static', label: 'Box — fixed in place' },
-            { value: 'group', label: 'Joint — invisible pivot' },
+            { value: 'group', label: 'Anchor — invisible pivot point' },
         ];
         if (Object.keys(doc.models ?? {}).length) kinds.push({ value: 'model', label: 'Part — lever model' });
         const kindSel = selectInput(kinds, 'box-dynamic', () => {});
@@ -243,6 +280,16 @@ export function mountInspector(container, ctx) {
         });
         fieldsTitle.appendChild(del);
         container.appendChild(fieldsTitle);
+
+        // name — any label you like; every reference follows the rename
+        const nameEl = document.createElement('input');
+        nameEl.type = 'text';
+        nameEl.value = obj.id;
+        nameEl.title = 'Rename this object — attachments, controls, and overlays all follow';
+        nameEl.addEventListener('change', () => {
+            if (!renameObject(obj.id, nameEl.value)) nameEl.value = obj.id;
+        });
+        container.appendChild(fieldRow('name', 'object id', nameEl));
 
         obj.position ??= [0, 0, 0];
         const live = () => ctx.liveTransform(obj.id);
@@ -297,7 +344,7 @@ export function mountInspector(container, ctx) {
         container.appendChild(h4('Control', 'Motion links: how inputs turn this object'));
 
         const inputOpts = [];
-        for (let i = 0; i < 4; i++) inputOpts.push({ value: `ch:${i}`, label: `Knob ${i}` });
+        for (let i = 0; i < 8; i++) inputOpts.push({ value: `ch:${i}`, label: `Knob ${i}` });
         for (const n of doc.nodes ?? []) inputOpts.push({ value: `node:${n.id}`, label: `Node ${n.id}` });
 
         if (!mine.length) {

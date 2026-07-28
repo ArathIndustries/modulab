@@ -19,6 +19,14 @@
 #include <ArduinoBLE.h>
 
 const char* MODULE_NAME = "knob2";
+
+// MORE SENSORS? Add pins here and bump NUM_CHANNELS — that is the whole
+// change. The app side needs nothing: channels self-register everywhere
+// (dashboard cards, scene "Knob N" choices, the hello count) from what
+// this array streams. Example for four knobs:
+//   const int CHANNEL_PINS[] = { A0, A1, A2, A3 };
+//   const int NUM_CHANNELS = 4;
+// Practical ceiling: 6 channels (the 64-byte BLE frame; USB has no limit).
 const int CHANNEL_PINS[] = { A0, A1 };
 const int NUM_CHANNELS = 2;
 

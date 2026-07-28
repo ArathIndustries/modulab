@@ -5,20 +5,43 @@
     "schema": 0,
     "provenance": "Transcribed from PowderOfLife 'Potentiometer Lever Digital Twin.unity' (decoded 2026-07-26); the first modulab scenes-as-data document."
   },
-
   "environment": {
-    "gravity": [0, -9.82, 0],
-    "camera": { "position": [1.58, 0, 11.15], "target": [1.58, 0, 0], "fov": 60 },
+    "gravity": [
+      0,
+      -9.82,
+      0
+    ],
+    "camera": {
+      "position": [
+        1.58,
+        0,
+        11.15
+      ],
+      "target": [
+        1.58,
+        0,
+        0
+      ],
+      "fov": 60
+    },
     "grid": true,
     "gridY": -3.41
   },
-
   "materials": {
-    "world": { "color": "#3a4150", "roughness": 0.85 },
-    "arm": { "color": "#eb6834", "roughness": 0.45, "metalness": 0.05 },
-    "toy": { "color": "#3987e5", "roughness": 0.4 }
+    "world": {
+      "color": "#3a4150",
+      "roughness": 0.85
+    },
+    "arm": {
+      "color": "#eb6834",
+      "roughness": 0.45,
+      "metalness": 0.05
+    },
+    "toy": {
+      "color": "#3987e5",
+      "roughness": 0.4
+    }
   },
-
   "models": {
     "lever60": {
       "url": "models/potentiometer-lever-60mm.obj",
@@ -27,54 +50,218 @@
       "rotationZ": 180
     }
   },
-
   "objects": [
-    { "id": "floor", "type": "box", "size": [25.15, 1, 4],
-      "position": [-6.6, -3.91, 0], "material": "world", "body": "static" },
-
-    { "id": "ramp", "type": "box", "size": [25.15, 1, 4],
-      "position": [14.42, 4.51, 0], "rotationZ": 45.766, "material": "world", "body": "static" },
-
-    { "id": "toy", "type": "box", "size": [2.9346223, 2.9346223, 2.9346223],
-      "position": [13.86, 7.09, 0], "material": "toy",
-      "body": "dynamic", "mass": 1, "plane2d": true, "resettable": true },
-
-    { "id": "root", "type": "group", "position": [-8, 0, 0], "rotationZ": 180 },
-
-    { "id": "seg0", "type": "model", "model": "lever60", "material": "arm",
-      "parent": "root", "position": [0, 0, 0], "rotationZ": 60,
-      "body": "kinematic", "collider": { "size": [6, 0.7, 3], "offset": [-3, 0, 0] } },
-
-    { "id": "seg1", "type": "model", "model": "lever60", "material": "arm",
-      "parent": "seg0", "position": [-6, 0, 0.661], "rotationZ": -30,
-      "body": "kinematic", "collider": { "size": [6, 0.7, 3], "offset": [-3, 0, 0] } }
+    {
+      "id": "floor",
+      "type": "box",
+      "size": [
+        25.15,
+        1,
+        4
+      ],
+      "position": [
+        -6.6,
+        -3.91,
+        0
+      ],
+      "material": "world",
+      "body": "static"
+    },
+    {
+      "id": "ramp",
+      "type": "box",
+      "size": [
+        25.15,
+        1,
+        4
+      ],
+      "position": [
+        14.42,
+        4.51,
+        0
+      ],
+      "rotationZ": 45.766,
+      "material": "world",
+      "body": "static"
+    },
+    {
+      "id": "toy",
+      "type": "box",
+      "size": [
+        2.9346223,
+        2.9346223,
+        2.9346223
+      ],
+      "position": [
+        13.86,
+        7.09,
+        0
+      ],
+      "material": "toy",
+      "body": "dynamic",
+      "mass": 1,
+      "plane2d": true,
+      "resettable": true
+    },
+    {
+      "id": "anchor",
+      "type": "group",
+      "position": [
+        -8,
+        0,
+        0
+      ],
+      "rotationZ": 180
+    },
+    {
+      "id": "seg0",
+      "type": "model",
+      "model": "lever60",
+      "material": "arm",
+      "parent": "anchor",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotationZ": 60,
+      "body": "kinematic",
+      "collider": {
+        "size": [
+          6,
+          0.7,
+          3
+        ],
+        "offset": [
+          -3,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "id": "seg1",
+      "type": "model",
+      "model": "lever60",
+      "material": "arm",
+      "parent": "seg0",
+      "position": [
+        -6,
+        0,
+        0.661
+      ],
+      "rotationZ": -30,
+      "body": "kinematic",
+      "collider": {
+        "size": [
+          6,
+          0.7,
+          3
+        ],
+        "offset": [
+          -3,
+          0,
+          0
+        ]
+      }
+    }
   ],
-
   "nodes": [
-    { "id": "gen1", "kind": "const", "value": 1 },
-    { "id": "mixAdd", "kind": "mix", "mode": "add", "a": "node:gen1", "b": "ch:0" },
-    { "id": "mixSub", "kind": "mix", "mode": "subtract", "a": "ch:1", "aAmp": -1, "b": "node:mixAdd" }
+    {
+      "id": "gen1",
+      "kind": "const",
+      "value": 1
+    },
+    {
+      "id": "mixAdd",
+      "kind": "mix",
+      "mode": "add",
+      "a": "node:gen1",
+      "b": "ch:0"
+    },
+    {
+      "id": "mixSub",
+      "kind": "mix",
+      "mode": "subtract",
+      "a": "ch:1",
+      "aAmp": -1,
+      "b": "node:mixAdd"
+    }
   ],
-
   "overlays": [
-    { "type": "vector", "attach": "toy", "quantity": "weight", "scale": 0.28, "color": "#e66767" },
-    { "type": "vector", "attach": "toy", "quantity": "velocity", "scale": 0.35, "color": "#199e70" },
-    { "type": "label", "attach": "seg0", "text": "θ₀ {deg}°", "offset": [0, 1.4, 0] },
-    { "type": "label", "attach": "seg1", "text": "θ₁ {deg}°", "offset": [0, 1.4, 0] }
+    {
+      "type": "vector",
+      "attach": "toy",
+      "quantity": "weight",
+      "scale": 0.28,
+      "color": "#e66767"
+    },
+    {
+      "type": "vector",
+      "attach": "toy",
+      "quantity": "velocity",
+      "scale": 0.35,
+      "color": "#199e70"
+    },
+    {
+      "type": "label",
+      "attach": "seg0",
+      "text": "\u03b8\u2080 {deg}\u00b0",
+      "offset": [
+        0,
+        1.4,
+        0
+      ]
+    },
+    {
+      "type": "label",
+      "attach": "seg1",
+      "text": "\u03b8\u2081 {deg}\u00b0",
+      "offset": [
+        0,
+        1.4,
+        0
+      ]
+    }
   ],
-
   "patches": {
     "independent": [
-      { "target": "seg0", "property": "rotationZ", "input": "ch:0",
-        "baseline": 60, "amplitude": 250, "invert": true, "lerp": 0.2 },
-      { "target": "seg1", "property": "rotationZ", "input": "ch:1",
-        "baseline": -30, "amplitude": -250, "lerp": 0.2 }
+      {
+        "target": "seg0",
+        "property": "rotationZ",
+        "input": "ch:0",
+        "baseline": 60,
+        "amplitude": 250,
+        "invert": true,
+        "lerp": 0.2
+      },
+      {
+        "target": "seg1",
+        "property": "rotationZ",
+        "input": "ch:1",
+        "baseline": -30,
+        "amplitude": -250,
+        "lerp": 0.2
+      }
     ],
     "pol-original": [
-      { "target": "seg0", "property": "rotationZ", "input": "ch:0",
-        "baseline": 60, "amplitude": 250, "invert": true, "lerp": 0.2 },
-      { "target": "seg1", "property": "rotationZ", "input": "node:mixSub",
-        "baseline": -30, "amplitude": 250, "lerp": 0.2 }
+      {
+        "target": "seg0",
+        "property": "rotationZ",
+        "input": "ch:0",
+        "baseline": 60,
+        "amplitude": 250,
+        "invert": true,
+        "lerp": 0.2
+      },
+      {
+        "target": "seg1",
+        "property": "rotationZ",
+        "input": "node:mixSub",
+        "baseline": -30,
+        "amplitude": 250,
+        "lerp": 0.2
+      }
     ]
   },
   "defaultPatch": "independent"

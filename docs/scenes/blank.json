@@ -1,0 +1,76 @@
+{
+  "meta": {
+    "id": "blank",
+    "name": "Blank bench",
+    "schema": 0,
+    "provenance": "Empty starter scene: a floor, the standard materials, and the lever model ready to place."
+  },
+  "environment": {
+    "gravity": [
+      0,
+      -9.82,
+      0
+    ],
+    "camera": {
+      "position": [
+        0,
+        2,
+        16
+      ],
+      "target": [
+        0,
+        1,
+        0
+      ],
+      "fov": 60
+    },
+    "grid": true,
+    "gridY": -2.9
+  },
+  "materials": {
+    "world": {
+      "color": "#3a4150",
+      "roughness": 0.85
+    },
+    "arm": {
+      "color": "#eb6834",
+      "roughness": 0.45,
+      "metalness": 0.05
+    },
+    "toy": {
+      "color": "#3987e5",
+      "roughness": 0.4
+    }
+  },
+  "models": {
+    "lever60": {
+      "url": "models/potentiometer-lever-60mm.obj",
+      "scale": 0.1,
+      "rotationX": 90,
+      "rotationZ": 180
+    }
+  },
+  "objects": [
+    {
+      "id": "floor",
+      "type": "box",
+      "size": [
+        40,
+        1,
+        6
+      ],
+      "position": [
+        0,
+        -3.4,
+        0
+      ],
+      "material": "world",
+      "body": "static"
+    }
+  ],
+  "nodes": [],
+  "patches": {
+    "default": []
+  },
+  "defaultPatch": "default"
+}
