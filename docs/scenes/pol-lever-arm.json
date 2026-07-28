@@ -204,26 +204,6 @@
       "color": "#199e70"
     },
     {
-      "type": "label",
-      "attach": "seg0",
-      "text": "\u03b8\u2080 {deg}\u00b0",
-      "offset": [
-        0,
-        1.4,
-        0
-      ]
-    },
-    {
-      "type": "label",
-      "attach": "seg1",
-      "text": "\u03b8\u2081 {deg}\u00b0",
-      "offset": [
-        0,
-        1.4,
-        0
-      ]
-    },
-    {
       "type": "contacts",
       "attach": "toy",
       "scale": 0.03,
@@ -243,6 +223,32 @@
       "offset": [
         0,
         2.3,
+        0
+      ]
+    },
+    {
+      "type": "graph",
+      "attach": "seg0",
+      "quantity": "deg",
+      "label": "\u03b8\u2080",
+      "seconds": 6,
+      "color": "#3987e5",
+      "offset": [
+        0,
+        2.1,
+        0
+      ]
+    },
+    {
+      "type": "graph",
+      "attach": "seg1",
+      "quantity": "deg",
+      "label": "\u03b8\u2081",
+      "seconds": 6,
+      "color": "#d95926",
+      "offset": [
+        0,
+        2.1,
         0
       ]
     }

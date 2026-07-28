@@ -155,8 +155,18 @@ Slice 2 adds solver-sourced overlays:
 `contacts` draws a normal-force arrow at every solver contact on the object —
 the floor visibly pushes back, sized by the actual constraint impulse.
 `trail` traces the object's recent path (projectile arcs when the arm launches
-the toy). Queued next: torque arcs (needs part masses), stress coloring,
-computed expressions. This section is where force diagrams and lesson
+the toy).
+
+```jsonc
+{ "type": "graph", "attach": "seg0", "quantity": "deg", "label": "θ₀",
+  "seconds": 6, "color": "#3987e5", "offset": [0, 2.1, 0] }
+```
+
+`graph` is a live sparkline sprite riding its object — the pivot's data
+tracker. Quantities: `deg` (angle), `omega` (angular velocity °/s), `speed`,
+`ref` (any channel/node). 20 Hz sampling over a `seconds` window; the header
+shows the exact current value. Queued next: torque arcs (needs part masses),
+stress coloring, computed expressions. This section is where force diagrams and lesson
 quantities accumulate — always as document data, never as UI chrome.
 
 ## Provenance of v0's shape

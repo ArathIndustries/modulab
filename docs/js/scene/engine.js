@@ -294,6 +294,59 @@ export async function instantiateScene(def, { scene, getChannel }) {
     const tmpVec = new THREE.Vector3();
     const gLen = Math.hypot(...g);
 
+    // graph overlay: a live sparkline sprite riding its object — angle,
+    // angular velocity, or any channel/node, over the last N seconds
+    function makeGraphSprite() {
+        const W = 256, H = 96;
+        const cnv = document.createElement('canvas');
+        cnv.width = W;
+        cnv.height = H;
+        const c2d = cnv.getContext('2d');
+        const tex = new THREE.CanvasTexture(cnv);
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+            map: tex, transparent: true, depthTest: false,
+        }));
+        sprite.scale.set(3.6, 1.35, 1);
+        sprite.renderOrder = 10;
+        return {
+            sprite,
+            draw(labelText, unit, samples, color) {
+                c2d.clearRect(0, 0, W, H);
+                c2d.fillStyle = 'rgba(12, 15, 20, 0.8)';
+                c2d.beginPath();
+                c2d.roundRect(2, 2, W - 4, H - 4, 12);
+                c2d.fill();
+                // header: label left, current value right (text carries the
+                // exact number; the sparkline carries the shape)
+                c2d.font = '600 22px ui-monospace, monospace';
+                c2d.textBaseline = 'top';
+                c2d.fillStyle = '#c3c7cf';
+                c2d.textAlign = 'left';
+                c2d.fillText(labelText, 14, 10);
+                c2d.textAlign = 'right';
+                c2d.fillStyle = '#f2f4f8';
+                const cur = samples.length ? samples[samples.length - 1] : 0;
+                c2d.fillText(`${cur.toFixed(0)}${unit}`, W - 14, 10);
+                if (samples.length > 1) {
+                    let min = Infinity, max = -Infinity;
+                    for (const v of samples) { if (v < min) min = v; if (v > max) max = v; }
+                    if (max - min < 4) { const mid = (max + min) / 2; min = mid - 2; max = mid + 2; }
+                    c2d.strokeStyle = color;
+                    c2d.lineWidth = 3;
+                    c2d.lineJoin = 'round';
+                    c2d.beginPath();
+                    samples.forEach((v, i) => {
+                        const x = 14 + (i / (samples.length - 1)) * (W - 28);
+                        const y = H - 12 - ((v - min) / (max - min)) * (H - 54);
+                        if (i === 0) c2d.moveTo(x, y); else c2d.lineTo(x, y);
+                    });
+                    c2d.stroke();
+                }
+                tex.needsUpdate = true;
+            },
+        };
+    }
+
     for (const ov of def.overlays ?? []) {
         const target = objects.get(ov.attach);
         if (!target) { warn(`overlay attached to unknown object '${ov.attach}'`); continue; }
@@ -320,6 +373,13 @@ export async function instantiateScene(def, { scene, getChannel }) {
                 pool.push(arrow);
             }
             overlays.push({ ...ov, target, pool });
+        } else if (ov.type === 'graph') {
+            const graph = makeGraphSprite();
+            scene.add(graph.sprite);
+            overlays.push({
+                ...ov, target, graph,
+                samples: [], lastAt: 0, lastDeg: null,
+            });
         } else if (ov.type === 'trail') {
             const cap = 240;
             const geo = new THREE.BufferGeometry();
@@ -339,7 +399,7 @@ export async function instantiateScene(def, { scene, getChannel }) {
     function updateOverlays() {
         for (const ov of overlays) {
             const pos = ov.target.group.getWorldPosition(tmpVec.set(0, 0, 0));
-            if (ov.arrow) {
+            if (ov.type === 'vector') {
                 let vx = 0, vy = 0, vz = 0;
                 if (ov.quantity === 'velocity' && ov.target.body) {
                     ({ x: vx, y: vy, z: vz } = ov.target.body.velocity);
@@ -354,7 +414,7 @@ export async function instantiateScene(def, { scene, getChannel }) {
                     ov.arrow.setDirection(new THREE.Vector3(vx, vy, vz).normalize());
                     ov.arrow.setLength(Math.min(len, 12), 0.45, 0.28);
                 }
-            } else if (ov.label) {
+            } else if (ov.type === 'label') {
                 const off = ov.offset ?? [0, 1, 0];
                 ov.label.sprite.position.set(pos.x + off[0], pos.y + off[1], pos.z + off[2]);
                 let text = ov.text ?? '{deg}';
@@ -377,7 +437,7 @@ export async function instantiateScene(def, { scene, getChannel }) {
                     text = text.replaceAll('{value}', v == null ? '—' : (v * 1023).toFixed(0));
                 }
                 ov.label.setText(text);
-            } else if (ov.pool) {
+            } else if (ov.type === 'contacts') {
                 // contacts: show one arrow per solver contact on the attach body
                 const body = ov.target.body;
                 let used = 0;
@@ -403,7 +463,36 @@ export async function instantiateScene(def, { scene, getChannel }) {
                     }
                 }
                 for (let i = used; i < ov.pool.length; i++) ov.pool[i].visible = false;
-            } else if (ov.trail) {
+            } else if (ov.type === 'graph') {
+                const nowMs = performance.now();
+                if (nowMs - ov.lastAt > 50) { // 20 Hz sample + redraw
+                    const dtS = (nowMs - ov.lastAt) / 1000;
+                    ov.lastAt = nowMs;
+                    const degNow = ov.target.group.rotation.z / DEG;
+                    let v = null;
+                    let unit = '';
+                    if ((ov.quantity ?? 'deg') === 'deg') {
+                        v = degNow; unit = '°';
+                    } else if (ov.quantity === 'omega') {
+                        v = ov.lastDeg == null ? 0 : (degNow - ov.lastDeg) / dtS;
+                        unit = '°/s';
+                    } else if (ov.quantity === 'speed' && ov.target.body) {
+                        v = ov.target.body.velocity.length();
+                    } else if (ov.quantity === 'ref') {
+                        const r = resolveRef(ov.ref ?? '');
+                        if (r != null) v = r * 1023;
+                    }
+                    ov.lastDeg = degNow;
+                    if (v != null) {
+                        ov.samples.push(v);
+                        const keep = Math.round((ov.seconds ?? 6) * 20);
+                        while (ov.samples.length > keep) ov.samples.shift();
+                        const off = ov.offset ?? [0, 2, 0];
+                        ov.graph.sprite.position.set(pos.x + off[0], pos.y + off[1], pos.z + off[2]);
+                        ov.graph.draw(ov.label ?? ov.quantity ?? 'deg', unit, ov.samples, ov.color ?? '#3987e5');
+                    }
+                }
+            } else if (ov.type === 'trail') {
                 const t = ov.trail;
                 const nowMs = performance.now();
                 if (nowMs - t.lastAt > 40) { // ~25 samples/s
@@ -495,6 +584,11 @@ export async function instantiateScene(def, { scene, getChannel }) {
                     ov.label.sprite.material.dispose();
                 }
                 if (ov.pool) for (const a of ov.pool) { scene.remove(a); a.dispose(); }
+                if (ov.graph) {
+                    scene.remove(ov.graph.sprite);
+                    ov.graph.sprite.material.map.dispose();
+                    ov.graph.sprite.material.dispose();
+                }
                 if (ov.trail) {
                     scene.remove(ov.trail.line);
                     ov.trail.geo.dispose();
