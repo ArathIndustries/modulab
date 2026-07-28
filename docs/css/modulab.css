@@ -386,6 +386,48 @@
     font-size: 0.78rem;
     font-family: ui-monospace, monospace;
 }
+.insp-addrow {
+    display: flex;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+}
+.insp-addrow select { flex: 1; }
+.insp-addrow button, .insp-add-driver {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.78rem;
+    padding: 0.25rem 0.6rem;
+}
+.insp-addrow button:hover, .insp-add-driver:hover { color: var(--text-primary); background: var(--bg-hover); }
+.insp-add-driver { width: 100%; margin-top: 0.2rem; }
+.insp-addrow select {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font-size: 0.78rem;
+    font-family: ui-monospace, monospace;
+}
+.insp-obj-title { display: flex; align-items: center; gap: 0.5rem; }
+.insp-obj-title .insp-del { margin-left: auto; }
+.insp-del {
+    background: none;
+    border: 1px solid var(--border-light);
+    border-radius: 5px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.7rem;
+    padding: 0.1rem 0.45rem;
+    text-transform: none;
+    letter-spacing: normal;
+}
+.insp-del:hover { color: var(--status-serious); border-color: var(--status-serious); }
+.insp-driver-cap { display: flex; align-items: center; }
+.insp-driver-cap .insp-del { margin-left: auto; }
+
 .insp-driver {
     border: 1px solid var(--border-light);
     border-radius: 6px;

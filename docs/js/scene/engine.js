@@ -254,6 +254,99 @@ export async function instantiateScene(def, { scene, getChannel }) {
         }
     }
 
+    // --- Overlays: in-scene analysis (lesson layer, slice 1) -------------------
+    // vector: arrow showing a live physical quantity on an object
+    // label: floating text sprite with {deg} (attach's rotationZ) / {value} (ref)
+    const overlays = [];
+
+    function makeLabelSprite() {
+        const cnv = document.createElement('canvas');
+        cnv.width = 256;
+        cnv.height = 64;
+        const c2d = cnv.getContext('2d');
+        const tex = new THREE.CanvasTexture(cnv);
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+            map: tex, transparent: true, depthTest: false,
+        }));
+        sprite.scale.set(3.4, 0.85, 1);
+        sprite.renderOrder = 10;
+        let lastText = null;
+        return {
+            sprite,
+            setText(text) {
+                if (text === lastText) return;
+                lastText = text;
+                c2d.clearRect(0, 0, 256, 64);
+                c2d.fillStyle = 'rgba(12, 15, 20, 0.78)';
+                c2d.beginPath();
+                c2d.roundRect(4, 8, 248, 48, 12);
+                c2d.fill();
+                c2d.font = '600 26px ui-monospace, monospace';
+                c2d.fillStyle = '#f2f4f8';
+                c2d.textAlign = 'center';
+                c2d.textBaseline = 'middle';
+                c2d.fillText(text, 128, 33);
+                tex.needsUpdate = true;
+            },
+        };
+    }
+
+    const tmpVec = new THREE.Vector3();
+    const gLen = Math.hypot(...g);
+
+    for (const ov of def.overlays ?? []) {
+        const target = objects.get(ov.attach);
+        if (!target) { warn(`overlay attached to unknown object '${ov.attach}'`); continue; }
+        if (ov.type === 'vector') {
+            const arrow = new THREE.ArrowHelper(
+                new THREE.Vector3(0, 1, 0), new THREE.Vector3(), 1,
+                new THREE.Color(ov.color ?? '#ffffff'), 0.45, 0.28);
+            arrow.line.material.linewidth = 2;
+            scene.add(arrow);
+            overlays.push({ ...ov, target, arrow });
+        } else if (ov.type === 'label') {
+            const label = makeLabelSprite();
+            scene.add(label.sprite);
+            overlays.push({ ...ov, target, label });
+        } else {
+            warn(`overlay type '${ov.type}' unknown`);
+        }
+    }
+
+    function updateOverlays() {
+        for (const ov of overlays) {
+            const pos = ov.target.group.getWorldPosition(tmpVec.set(0, 0, 0));
+            if (ov.arrow) {
+                let vx = 0, vy = 0, vz = 0;
+                if (ov.quantity === 'velocity' && ov.target.body) {
+                    ({ x: vx, y: vy, z: vz } = ov.target.body.velocity);
+                } else if (ov.quantity === 'weight' || ov.quantity === 'gravity') {
+                    const m = ov.quantity === 'weight' ? (ov.target.def.mass ?? 1) : 1;
+                    vx = 0; vy = -m * gLen; vz = 0;
+                }
+                const len = Math.hypot(vx, vy, vz) * (ov.scale ?? 0.3);
+                ov.arrow.visible = len > 0.15;
+                if (ov.arrow.visible) {
+                    ov.arrow.position.copy(pos);
+                    ov.arrow.setDirection(new THREE.Vector3(vx, vy, vz).normalize());
+                    ov.arrow.setLength(Math.min(len, 12), 0.45, 0.28);
+                }
+            } else if (ov.label) {
+                const off = ov.offset ?? [0, 1, 0];
+                ov.label.sprite.position.set(pos.x + off[0], pos.y + off[1], pos.z + off[2]);
+                let text = ov.text ?? '{deg}';
+                if (text.includes('{deg}')) {
+                    text = text.replace('{deg}', (ov.target.group.rotation.z / DEG).toFixed(0));
+                }
+                if (text.includes('{value}')) {
+                    const v = resolveRef(ov.ref ?? '');
+                    text = text.replace('{value}', v == null ? '—' : (v * 1023).toFixed(0));
+                }
+                ov.label.setText(text);
+            }
+        }
+    }
+
     // --- Public instance ----------------------------------------------------
     return {
         world,
@@ -277,8 +370,17 @@ export async function instantiateScene(def, { scene, getChannel }) {
             syncKinematics();
             world.step(1 / 60, dt, 3);
             copyDynamics();
+            updateOverlays();
         },
         dispose() {
+            for (const ov of overlays) {
+                if (ov.arrow) { scene.remove(ov.arrow); ov.arrow.dispose(); }
+                if (ov.label) {
+                    scene.remove(ov.label.sprite);
+                    ov.label.sprite.material.map.dispose();
+                    ov.label.sprite.material.dispose();
+                }
+            }
             for (const o of objects.values()) {
                 o.body && world.removeBody(o.body);
                 o.group.parent?.remove(o.group);

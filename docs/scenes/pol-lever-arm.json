@@ -56,6 +56,13 @@
     { "id": "mixSub", "kind": "mix", "mode": "subtract", "a": "ch:1", "aAmp": -1, "b": "node:mixAdd" }
   ],
 
+  "overlays": [
+    { "type": "vector", "attach": "toy", "quantity": "weight", "scale": 0.28, "color": "#e66767" },
+    { "type": "vector", "attach": "toy", "quantity": "velocity", "scale": 0.35, "color": "#199e70" },
+    { "type": "label", "attach": "seg0", "text": "θ₀ {deg}°", "offset": [0, 1.4, 0] },
+    { "type": "label", "attach": "seg1", "text": "θ₁ {deg}°", "offset": [0, 1.4, 0] }
+  ],
+
   "patches": {
     "independent": [
       { "target": "seg0", "property": "rotationZ", "input": "ch:0",

@@ -128,6 +128,24 @@ are just `ch:N` refs — [PROTOCOL.md → Build your own module](PROTOCOL.md#bui
 (0 = snap, 0.2 ≈ the PoL feel). v0 property: `rotationZ`; the schema grows to
 `position*/scale*/material.*` when a scene needs them — rule 1.
 
+### Overlays (lesson layer, slice 1)
+
+In-scene analysis, declared by the document and rendered inside the world:
+
+```jsonc
+"overlays": [
+  { "type": "vector", "attach": "toy", "quantity": "weight",   "scale": 0.28, "color": "#e66767" },
+  { "type": "vector", "attach": "toy", "quantity": "velocity", "scale": 0.35, "color": "#199e70" },
+  { "type": "label",  "attach": "seg0", "text": "θ₀ {deg}°", "offset": [0, 1.4, 0] }
+]
+```
+
+`vector` draws a live arrow on an object — quantities v0: `velocity` (dynamic
+body), `weight` (mass·g, down), `gravity` (unit). `label` floats a text sprite;
+`{deg}` substitutes the attach object's rotationZ, `{value}` a `ref` channel/node.
+This section is where force diagrams, stress gradients, and lesson quantities
+accumulate — always as document data, never as UI chrome.
+
 ## Provenance of v0's shape
 
 Everything here is the generalization of what the decoded Unity scene actually
@@ -144,8 +162,11 @@ invert semantics, and a constant generator. Nothing speculative was added.
 2. **Workspace panels** — instruments (from Dashboard) and node patching (from
    Twin) dock beside the viewport; tabs retire when parity lands. ← starts this burst
 3. **Editing verbs** — select object → inspector shows its document entry;
-   change values live; export/import JSON; localStorage drafts.
-4. **Authoring verbs** — add/delete objects and nodes, rebind driver inputs,
-   save named patches; share via URL. "A tiny domain-specific Unity."
+   change values live; export/import JSON; localStorage drafts. ← shipped
+4. **Authoring verbs** — add/delete/reparent objects, driver CRUD, save named
+   patches. Still code-side: node editing, renames, external scene URLs.
+   ← core shipped
 5. **Lesson layer** — overlay definitions (computed quantities, annotations)
-   join the document, turning any scene into a physics/statics/MoM exercise.
+   turn any scene into a physics/statics/MoM exercise. ← slice 1 shipped
+   (vectors + labels); next: force-at-contact, torque arcs, stress coloring,
+   computed expressions.
