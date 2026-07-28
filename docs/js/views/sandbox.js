@@ -11,6 +11,7 @@
  */
 import * as THREE from '../../vendor/three.module.js';
 import { OrbitControls } from '../../vendor/OrbitControls.js';
+import { TransformControls } from '../../vendor/TransformControls.js';
 import { RoomEnvironment } from '../../vendor/RoomEnvironment.js';
 import { stream } from '../stream.js';
 import { mountConnectBar } from '../components/connectbar.js';
@@ -36,6 +37,10 @@ export function renderSandbox(container) {
                 <div class="hud hud-tr">
                     <span class="scene-name" id="scene-name"></span>
                     <span class="patch-toggle" id="patch-toggle" hidden></span>
+                    <span id="giz-modes" hidden>
+                        <button class="btn btn-ghost btn-sm" data-m="translate" title="Drag arrows to move (W)">Move</button>
+                        <button class="btn btn-ghost btn-sm" data-m="rotate" title="Drag the ring to rotate (E)">Rotate</button>
+                    </span>
                     <button class="btn btn-ghost btn-sm" id="ws-reset">Reset</button>
                     <button class="btn btn-ghost btn-sm" id="ws-edit">Edit</button>
                 </div>
@@ -84,6 +89,45 @@ export function renderSandbox(container) {
     sun.shadow.bias = -0.0004;
     scene.add(sun);
 
+    // Viewport gizmo — viewport-first editing (workshop ruling 2026-07-27)
+    const modeBtns = container.querySelector('#giz-modes');
+    const gizmo = new TransformControls(camera, canvas);
+    gizmo.setSize(0.85);
+    scene.add(gizmo.getHelper ? gizmo.getHelper() : gizmo);
+
+    function setGizmoMode(m) {
+        gizmo.setMode(m);
+        const rot = m === 'rotate';
+        gizmo.showX = !rot; // rotate mode: only the Z ring matters in-plane
+        gizmo.showY = !rot;
+        gizmo.showZ = true;
+        for (const b of modeBtns.querySelectorAll('button')) {
+            b.classList.toggle('active', b.dataset.m === m);
+        }
+    }
+    for (const b of modeBtns.querySelectorAll('button')) {
+        b.addEventListener('click', () => setGizmoMode(b.dataset.m));
+    }
+
+    let gizmoSyncAt = 0;
+    gizmo.addEventListener('dragging-changed', (e) => {
+        controls.enabled = !e.value;
+        if (!e.value && selectedId) { // drag ended: settle doc + history
+            inst?.commitTransform(selectedId);
+            inspector?.syncTransform();
+            commit({});
+        }
+    });
+    gizmo.addEventListener('objectChange', () => {
+        if (!selectedId) return;
+        const now = performance.now();
+        if (now - gizmoSyncAt > 60) { // throttled write-back during the drag
+            gizmoSyncAt = now;
+            inst?.commitTransform(selectedId);
+            inspector?.syncTransform();
+        }
+    });
+
     // --- Stream state -------------------------------------------------------
     const lastValues = new Map();
     const chBadges = new Map();
@@ -121,13 +165,60 @@ export function renderSandbox(container) {
         try { localStorage.setItem(draftKey, JSON.stringify(doc)); } catch { /* storage full */ }
     }
 
-    function markDirty({ reload }) {
+    // --- Undo/redo: coalesced document snapshots -----------------------------
+    const history = [];
+    let historyPtr = -1;
+    let historyTimer = null;
+
+    function seedHistory() {
+        history.length = 0;
+        history.push(JSON.stringify(doc));
+        historyPtr = 0;
+    }
+    function pushHistorySoon() {
+        clearTimeout(historyTimer);
+        historyTimer = setTimeout(() => {
+            const snap = JSON.stringify(doc);
+            if (history[historyPtr] === snap) return;
+            history.splice(historyPtr + 1);
+            history.push(snap);
+            if (history.length > 60) history.shift();
+            historyPtr = history.length - 1;
+        }, 350);
+    }
+    function restoreHistory(dir) {
+        clearTimeout(historyTimer);
+        const next = historyPtr + dir;
+        if (next < 0 || next >= history.length) return;
+        historyPtr = next;
+        doc = JSON.parse(history[historyPtr]);
         saveDraft();
-        if (reload) {
+        inspector?.setDraft(true);
+        clearTimeout(reloadTimer);
+        buildScene().then(() => inspector?.render());
+    }
+
+    /** Every edit funnels through here. rebuild=true for structural changes;
+     *  transform/driver-field edits apply live and skip the rebuild. */
+    function commit({ rebuild = false } = {}) {
+        const wasDraft = isDraft;
+        saveDraft();
+        if (!wasDraft) inspector?.setDraft(true);
+        pushHistorySoon();
+        if (rebuild) {
             clearTimeout(reloadTimer);
-            reloadTimer = setTimeout(() => buildScene(), 250);
+            reloadTimer = setTimeout(async () => {
+                await buildScene();
+                inspector?.render();
+            }, 200);
         }
-        inspector?.refresh();
+    }
+
+    /** The doc's transform for `id` changed in the panel: apply to the live
+     *  scene without a rebuild (engine also moves the physics body). */
+    function liveTransform(id) {
+        inst?.syncFromDef(id);
+        commit({});
     }
 
     function exportDoc() {
@@ -142,16 +233,17 @@ export function renderSandbox(container) {
     function importDoc(parsed) {
         doc = parsed;
         saveDraft();
-        buildScene();
-        inspector?.refresh();
+        pushHistorySoon();
+        buildScene().then(() => inspector?.render());
     }
 
     async function revertDraft() {
         localStorage.removeItem(draftKey);
         isDraft = false;
         await loadDoc(true);
-        buildScene();
-        inspector?.refresh();
+        seedHistory();
+        await buildScene();
+        inspector?.render();
     }
 
     async function loadDoc(forceOriginal = false) {
@@ -183,7 +275,9 @@ export function renderSandbox(container) {
             selectionHelper = new THREE.BoxHelper(target.group, mode === 'light' ? 0x2a78d6 : 0x3987e5);
             scene.add(selectionHelper);
         }
-        inspector?.refresh();
+        if (target && !inspectorEl.hidden) gizmo.attach(target.group);
+        else gizmo.detach();
+        inspector?.render();
     }
 
     const raycaster = new THREE.Raycaster();
@@ -198,6 +292,7 @@ export function renderSandbox(container) {
         const moved = Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y);
         const held = performance.now() - downAt.t;
         downAt = null;
+        if (gizmo.axis || gizmo.dragging) return; // pointer is on the gizmo
         if (moved > 5 || held > 400 || !inst) return; // that was an orbit, not a click
 
         const rect = canvas.getBoundingClientRect();
@@ -265,7 +360,7 @@ export function renderSandbox(container) {
                 radio.addEventListener('change', () => {
                     inst.setPatch(radio.value);
                     localStorage.setItem(key, radio.value);
-                    inspector?.refresh();
+                    inspector?.render();
                 });
             }
         } else {
@@ -289,10 +384,12 @@ export function renderSandbox(container) {
     // --- Editor toggle -----------------------------------------------------------
     function openInspector() {
         inspectorEl.hidden = false;
+        modeBtns.hidden = false;
         editBtn.classList.add('active');
         inspector ??= mountInspector(inspectorEl, {
             getDoc: () => doc,
-            markDirty,
+            commit,
+            liveTransform,
             getSelected: () => selectedId,
             setSelected,
             isDraft: () => isDraft,
@@ -301,17 +398,41 @@ export function renderSandbox(container) {
             revertDraft,
             getCurrentPatch: () => inst?.currentPatch ?? doc?.defaultPatch ?? 'default',
         });
-        inspector.refresh();
+        inspector.render();
+        setGizmoMode('translate');
+        const target = selectedId ? inst?.objects.get(selectedId) : null;
+        if (target) gizmo.attach(target.group);
     }
     function closeInspector() {
         inspectorEl.hidden = true;
+        modeBtns.hidden = true;
         editBtn.classList.remove('active');
+        gizmo.detach();
     }
     editBtn.addEventListener('click', () => {
         if (inspectorEl.hidden) openInspector(); else closeInspector();
     });
 
     resetBtn.addEventListener('click', () => inst?.resetDynamics());
+
+    // Undo/redo + gizmo mode keys (skip while typing in panel fields)
+    function onKey(e) {
+        const t = e.target;
+        if (t && ['INPUT', 'SELECT', 'TEXTAREA'].includes(t.tagName)) return;
+        const k = e.key.toLowerCase();
+        if ((e.ctrlKey || e.metaKey) && k === 'z') {
+            e.preventDefault();
+            restoreHistory(e.shiftKey ? 1 : -1);
+        } else if ((e.ctrlKey || e.metaKey) && k === 'y') {
+            e.preventDefault();
+            restoreHistory(1);
+        } else if (k === 'w' && !inspectorEl.hidden) {
+            setGizmoMode('translate');
+        } else if (k === 'e' && !inspectorEl.hidden) {
+            setGizmoMode('rotate');
+        }
+    }
+    window.addEventListener('keydown', onKey);
 
     // --- Boot ---------------------------------------------------------------------
     (async () => {
@@ -322,6 +443,7 @@ export function renderSandbox(container) {
             stageMsg.textContent = `Scene '${sceneId}' failed to load: ${err.message}`;
             return;
         }
+        seedHistory();
         await buildScene();
         if (urlParams.has('edit')) openInspector();
     })();
@@ -371,10 +493,14 @@ export function renderSandbox(container) {
         teardown() {
             destroyed = true;
             clearTimeout(reloadTimer);
+            clearTimeout(historyTimer);
+            window.removeEventListener('keydown', onKey);
             if (raf) cancelAnimationFrame(raf);
             offSample();
             unmountBar();
             ro.disconnect();
+            gizmo.detach();
+            gizmo.dispose?.();
             inspector?.destroy();
             inst?.dispose();
             renderer.dispose();

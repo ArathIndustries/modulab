@@ -353,6 +353,47 @@ export async function instantiateScene(def, { scene, getChannel }) {
         objects,
         env: def.environment ?? {},
         meta: def.meta ?? {},
+        /**
+         * Editing support: push the document's transform for one object into
+         * the live scene (panel edits) without a rebuild.
+         */
+        syncFromDef(id) {
+            const o = objects.get(id);
+            if (!o) return;
+            o.group.position.set(...(o.def.position ?? [0, 0, 0]));
+            o.group.rotation.z = (o.def.rotationZ ?? 0) * DEG;
+            o.initial.position = [...(o.def.position ?? [0, 0, 0])];
+            o.initial.rotationZ = (o.def.rotationZ ?? 0) * DEG;
+            this.commitTransform(id, { fromDef: true });
+        },
+        /**
+         * Editing support: write the live group's transform back into the
+         * document and the physics body (gizmo drags). Kinematic bodies sync
+         * every tick anyway; static and dynamic bodies are moved here.
+         */
+        commitTransform(id, { fromDef = false } = {}) {
+            const o = objects.get(id);
+            if (!o) return;
+            if (!fromDef) {
+                o.def.position = [
+                    Number(o.group.position.x.toFixed(3)),
+                    Number(o.group.position.y.toFixed(3)),
+                    Number(o.group.position.z.toFixed(3)),
+                ];
+                o.def.rotationZ = Number((o.group.rotation.z / DEG).toFixed(2));
+                o.initial.position = [...o.def.position];
+                o.initial.rotationZ = o.group.rotation.z;
+            }
+            if (o.body && o.body.type !== CANNON.Body.KINEMATIC) {
+                o.body.position.set(o.group.position.x, o.group.position.y, o.group.position.z);
+                o.body.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 0, 1), o.group.rotation.z);
+                if (o.body.type === CANNON.Body.DYNAMIC) {
+                    o.body.velocity.setZero();
+                    o.body.angularVelocity.setZero();
+                    o.body.wakeUp();
+                }
+            }
+        },
         get patchNames() { return Object.keys(patches); },
         get currentPatch() { return currentPatch; },
         setPatch,

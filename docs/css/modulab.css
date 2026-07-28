@@ -355,6 +355,15 @@
     border-radius: 5px;
     cursor: pointer;
     color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.insp-tree li b { font-weight: 600; color: var(--text-primary); }
+.insp-tree li .t-chip {
+    margin-left: auto;
+    font-size: 0.68rem;
+    color: var(--text-muted);
 }
 .insp-tree li:hover { background: var(--bg-hover); }
 .insp-tree li.selected {
