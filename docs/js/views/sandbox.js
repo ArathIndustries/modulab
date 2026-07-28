@@ -41,7 +41,8 @@ export function renderSandbox(container) {
                         <button class="btn btn-ghost btn-sm" data-m="translate" title="Drag arrows to move (W)">Move</button>
                         <button class="btn btn-ghost btn-sm" data-m="rotate" title="Drag the ring to rotate (E)">Rotate</button>
                     </span>
-                    <button class="btn btn-ghost btn-sm" id="ws-reset">Reset</button>
+                    <button class="btn btn-ghost btn-sm" id="ws-reset" title="Put the physics objects back at their start">Reset</button>
+                    <button class="btn btn-ghost btn-sm" id="ws-restore" hidden title="Discard your edits and reload the original scene">Restore scene</button>
                     <button class="btn btn-ghost btn-sm" id="ws-edit">Edit</button>
                 </div>
                 <div class="hud hud-bl" id="ws-readout"></div>
@@ -60,6 +61,7 @@ export function renderSandbox(container) {
     const inspectorEl = container.querySelector('#inspector');
     const editBtn = container.querySelector('#ws-edit');
     const resetBtn = container.querySelector('#ws-reset');
+    const restoreBtn = container.querySelector('#ws-restore');
     const mode = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
     const urlParams = new URLSearchParams(window.location.search);
 
@@ -164,6 +166,7 @@ export function renderSandbox(container) {
 
     function saveDraft() {
         isDraft = true;
+        restoreBtn.hidden = false;
         try {
             localStorage.setItem(draftKey, JSON.stringify({ __modulab: 1, baseline: baselineStr, doc }));
         } catch { /* storage full */ }
@@ -360,6 +363,7 @@ export function renderSandbox(container) {
         if (destroyed) { inst.dispose(); return; }
 
         sceneNameEl.textContent = (inst.meta.name ?? sceneId) + (isDraft ? ' *' : '');
+        restoreBtn.hidden = !isDraft;
 
         if (firstBuild) {
             const cam = inst.env.camera ?? { position: [0, 4, 12], target: [0, 0, 0], fov: 60 };
@@ -457,6 +461,12 @@ export function renderSandbox(container) {
     });
 
     resetBtn.addEventListener('click', () => inst?.resetDynamics());
+    restoreBtn.addEventListener('click', () => {
+        if (confirm('Discard your edits and reload the original scene?')) {
+            container.querySelector('.update-note')?.remove();
+            revertDraft();
+        }
+    });
 
     // Undo/redo + gizmo mode keys (skip while typing in panel fields)
     function onKey(e) {
