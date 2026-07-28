@@ -251,6 +251,19 @@
         2.1,
         0
       ]
+    },
+    {
+      "type": "graph",
+      "attach": "seg0",
+      "quantity": "omega",
+      "label": "\u03c9\u2080",
+      "seconds": 6,
+      "color": "#199e70",
+      "offset": [
+        0,
+        3.55,
+        0
+      ]
     }
   ],
   "patches": {
