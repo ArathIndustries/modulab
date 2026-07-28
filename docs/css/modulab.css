@@ -364,7 +364,21 @@
     margin-left: auto;
     font-size: 0.68rem;
     color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
 }
+.role-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.role-dot.scenery { background: #6b7280; }
+.role-dot.physics { background: #3987e5; }      /* matches the blue toy */
+.role-dot.knobdriven { background: #eb6834; }   /* matches the orange parts */
+.role-dot.part { background: transparent; border: 1.5px solid #eb6834; }
+.role-dot.anchor { background: transparent; border: 1.5px dashed var(--text-muted); }
 .insp-tree li:hover { background: var(--bg-hover); }
 .insp-tree li.selected {
     background: color-mix(in srgb, var(--accent-primary) 18%, transparent);

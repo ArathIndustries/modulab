@@ -16,14 +16,24 @@
  * liveTransform(id)
  */
 
-const TYPE_LABEL = { box: 'Box', group: 'Anchor', model: 'Part' };
-const BODY_LABEL = { static: 'fixed', dynamic: 'physics', kinematic: 'driven' };
-const CHIP_TIP = {
-    'Box · fixed': 'Scenery: solid, collides, never moves.',
-    'Box · physics': 'Falls, tumbles, gets pushed — obeys gravity and collisions.',
-    'Anchor': 'An invisible point other objects attach to — a mount or a pivot. Has no shape of its own.',
-    'Part · driven': 'A real part moved by a knob. It pushes physics objects but nothing pushes it back.',
+// Tree rows describe ROLES in one plain word, with a dot color that matches
+// what the object looks like in the scene (glance ruling 2026-07-27).
+const ROLES = {
+    scenery: { word: 'scenery', tip: 'Solid and fixed in place — the world\'s furniture. Nothing moves it.' },
+    physics: { word: 'physics', tip: 'Falls and collides — gravity, the arm, and other objects can push it.' },
+    driven: { word: 'knob-driven', tip: 'Moved by an input — select it and see Control below.' },
+    anchor: { word: 'anchor', tip: 'Invisible attachment point — a mount or a pivot for other objects.' },
+    part: { word: 'part', tip: 'A part with nothing controlling it yet — connect a knob under Control.' },
 };
+
+function roleOf(o, doc) {
+    if (o.type === 'group') return ROLES.anchor;
+    if (o.body === 'dynamic') return ROLES.physics;
+    if (o.body === 'static') return ROLES.scenery;
+    const driven = Object.values(doc.patches ?? {}).some(
+        (list) => list.some((d) => d.target === o.id));
+    return driven ? ROLES.driven : ROLES.part;
+}
 
 const RESPONSE_PRESETS = [
     { value: 0, label: 'instant' },
@@ -229,11 +239,9 @@ export function mountInspector(container, ctx) {
         for (const o of doc.objects ?? []) {
             const li = document.createElement('li');
             li.style.paddingLeft = `${0.4 + depthOf(o) * 0.9}rem`;
-            const chips = [TYPE_LABEL[o.type] ?? o.type];
-            if (o.body) chips.push(BODY_LABEL[o.body] ?? o.body);
-            const chipText = chips.join(' · ');
-            li.title = CHIP_TIP[chipText] ?? '';
-            li.innerHTML = `<b>${o.id}</b><span class="t-chip">${chipText}</span>`;
+            const role = roleOf(o, doc);
+            li.title = role.tip;
+            li.innerHTML = `<b>${o.id}</b><span class="t-chip"><i class="role-dot ${role.word.replace('-', '')}"></i>${role.word}</span>`;
             if (o.id === selected) li.className = 'selected';
             li.addEventListener('click', () => ctx.setSelected(o.id === selected ? null : o.id));
             tree.appendChild(li);
