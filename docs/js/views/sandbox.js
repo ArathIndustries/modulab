@@ -355,7 +355,8 @@ export function renderSandbox(container) {
             patchEl.innerHTML = inst.patchNames.map((p) => `
                 <label><input type="radio" name="ws-patch" value="${p}"
                     ${p === inst.currentPatch ? 'checked' : ''}> ${p}</label>
-            `).join('');
+            `).join('')
+                + '<button class="patch-save" title="Save the current motion setup under a new name">＋</button>';
             for (const radio of patchEl.querySelectorAll('input')) {
                 radio.addEventListener('change', () => {
                     inst.setPatch(radio.value);
@@ -363,6 +364,12 @@ export function renderSandbox(container) {
                     inspector?.render();
                 });
             }
+            patchEl.querySelector('.patch-save').addEventListener('click', () => {
+                const name = prompt('Name for this motion setup:');
+                if (!name || doc.patches?.[name]) return;
+                doc.patches[name] = JSON.parse(JSON.stringify(doc.patches[inst.currentPatch] ?? []));
+                commit({ rebuild: true });
+            });
         } else {
             patchEl.hidden = true;
         }
@@ -446,6 +453,8 @@ export function renderSandbox(container) {
         seedHistory();
         await buildScene();
         if (urlParams.has('edit')) openInspector();
+        const preselect = urlParams.get('select');
+        if (preselect) setSelected(preselect);
     })();
 
     // --- Render loop -----------------------------------------------------------

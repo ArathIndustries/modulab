@@ -1,34 +1,36 @@
 /**
- * Inspector v2 — workshop round (ruling 2026-07-27):
- *  - speaks human, not schema: Box/Joint/Part, fixed/physics/driven,
- *    Knob N instead of ch:N, rest/sweep/smoothing instead of
- *    baseline/amplitude/lerp (schema names live in tooltips)
- *  - field edits NEVER re-render the panel (no focus/scroll loss);
- *    structural changes re-render with scroll preserved
- *  - transform fields apply live via ctx.liveTransform (no scene rebuild)
- *    and stay in sync with viewport gizmo drags via syncTransform()
+ * Inspector v3 — IA workshop round 2 (ruling 2026-07-27):
  *
- * ctx contract:
- *   getDoc, getSelected, setSelected, isDraft,
- *   exportDoc, importDoc(parsed), revertDraft,
- *   getCurrentPatch,
- *   commit({rebuild})   — persist draft + undo history (+ rebuild scene)
- *   liveTransform(id)   — doc transform changed; push into live scene
+ *   EVERYTHING BELOW THE SCENE LIST IS SCOPED TO THE SELECTION.
+ *   No selection -> just the scene list and a hint. Select an object ->
+ *   its properties + "Control": only the motion links that drive THAT
+ *   object, phrased as sentences ("Knob 0 turns this object"), with
+ *   plain-word fields (starting angle / swing / response / flip).
+ *
+ *   The old global driver list is gone — that was the "two knobs that
+ *   never go away". Patch save moved out to the HUD next to the patch
+ *   radios (it's a scene-level action, not a selection action).
+ *
+ * ctx contract: getDoc, getSelected, setSelected, isDraft, exportDoc,
+ * importDoc, revertDraft, getCurrentPatch, commit({rebuild}),
+ * liveTransform(id)
  */
 
 const TYPE_LABEL = { box: 'Box', group: 'Joint', model: 'Part' };
 const BODY_LABEL = { static: 'fixed', dynamic: 'physics', kinematic: 'driven' };
 
-function humanRef(ref) {
-    if (!ref) return '—';
-    if (ref.startsWith('ch:')) return `Knob ${ref.slice(3)}`;
-    if (ref.startsWith('node:')) return `Node ${ref.slice(5)}`;
-    return ref;
-}
+const RESPONSE_PRESETS = [
+    { value: 0, label: 'instant' },
+    { value: 0.5, label: 'snappy' },
+    { value: 0.2, label: 'smooth' },
+    { value: 0.06, label: 'floaty' },
+];
 
 export function mountInspector(container, ctx) {
     let destroyed = false;
     const transformRefs = { id: null, pos: [], rot: null };
+
+    // --- tiny builders ---------------------------------------------------------
 
     function numberInput(value, step, onInput, tooltip) {
         const el = document.createElement('input');
@@ -62,13 +64,20 @@ export function mountInspector(container, ctx) {
         if (tooltip) sel.title = tooltip;
         for (const { value, label } of options) {
             const opt = document.createElement('option');
-            opt.value = value;
-            opt.textContent = label ?? value;
-            if (value === current) opt.selected = true;
+            opt.value = String(value);
+            opt.textContent = label ?? String(value);
+            if (String(value) === String(current)) opt.selected = true;
             sel.appendChild(opt);
         }
         sel.addEventListener('change', () => onChange(sel.value));
         return sel;
+    }
+
+    function h4(text, tooltip) {
+        const el = document.createElement('h4');
+        el.textContent = text;
+        if (tooltip) el.title = tooltip;
+        return el;
     }
 
     // --- authoring verbs -------------------------------------------------------
@@ -141,7 +150,7 @@ export function mountInspector(container, ctx) {
         transformRefs.pos = [];
         transformRefs.rot = null;
 
-        // header
+        // header ----------------------------------------------------------------
         const head = document.createElement('div');
         head.className = 'insp-head';
         head.innerHTML = `
@@ -171,10 +180,8 @@ export function mountInspector(container, ctx) {
         });
         container.appendChild(head);
 
-        // scene tree
-        const treeTitle = document.createElement('h4');
-        treeTitle.textContent = 'Scene';
-        container.appendChild(treeTitle);
+        // scene list ---------------------------------------------------------------
+        container.appendChild(h4('Scene'));
         const tree = document.createElement('ul');
         tree.className = 'insp-tree';
         const byId = new Map((doc.objects ?? []).map((x) => [x.id, x]));
@@ -196,7 +203,6 @@ export function mountInspector(container, ctx) {
         }
         container.appendChild(tree);
 
-        // add-object controls
         const addRow = document.createElement('div');
         addRow.className = 'insp-addrow';
         const kinds = [
@@ -213,141 +219,160 @@ export function mountInspector(container, ctx) {
         addRow.appendChild(addBtn);
         container.appendChild(addRow);
 
-        // selected object
+        // ======= everything below exists ONLY for a selection =======
         const obj = (doc.objects ?? []).find((o) => o.id === selected);
-        const fieldsTitle = document.createElement('h4');
-        fieldsTitle.className = 'insp-obj-title';
-        fieldsTitle.textContent = obj ? obj.id : 'Selection';
-        if (obj) {
-            const del = document.createElement('button');
-            del.className = 'insp-del';
-            del.textContent = 'Delete';
-            del.title = 'Remove this object and everything attached to it';
-            del.addEventListener('click', () => {
-                if (confirm(`Delete '${obj.id}' and everything attached to it?`)) deleteObject(obj.id);
-            });
-            fieldsTitle.appendChild(del);
-        }
-        container.appendChild(fieldsTitle);
-
         if (!obj) {
             const hint = document.createElement('p');
             hint.className = 'hint';
-            hint.textContent = 'Click something in the scene (or the list above). Drag the arrows to move it, or use the fields for exact numbers.';
+            hint.style.marginTop = '0.8rem';
+            hint.textContent = 'Select something — click it in the scene or in the list above — to see and change what it is and what moves it.';
             container.appendChild(hint);
-        } else {
-            obj.position ??= [0, 0, 0];
-            const live = () => ctx.liveTransform(obj.id);
-            transformRefs.id = obj.id;
-            transformRefs.pos = [0, 1, 2].map((i) => numberInput(obj.position[i] ?? 0, 0.1, (v) => {
-                obj.position[i] = v;
-                live();
-            }));
-            container.appendChild(fieldRow('position', 'position [x, y, z] in scene units', ...transformRefs.pos));
-            transformRefs.rot = numberInput(obj.rotationZ ?? 0, 1, (v) => {
-                obj.rotationZ = v;
-                live();
-            }, 'rotationZ (degrees)');
-            container.appendChild(fieldRow('angle °', 'rotationZ', transformRefs.rot));
-
-            const rebuild = () => ctx.commit({ rebuild: true });
-            if (obj.size) {
-                container.appendChild(fieldRow('size', 'size [x, y, z]',
-                    ...[0, 1, 2].map((i) => numberInput(obj.size[i] ?? 1, 0.1, (v) => {
-                        obj.size[i] = v;
-                        rebuild();
-                    }))));
-            }
-            if (obj.body === 'dynamic') {
-                container.appendChild(fieldRow('mass', 'mass (kg-ish)', numberInput(obj.mass ?? 1, 0.1, (v) => {
-                    obj.mass = v;
-                    rebuild();
-                })));
-            }
-            const idx = doc.objects.indexOf(obj);
-            const parentOpts = [{ value: '', label: '(the world)' },
-                ...doc.objects.slice(0, idx).map((o) => ({ value: o.id, label: o.id }))];
-            container.appendChild(fieldRow('attached to', 'parent — what this object moves with', selectInput(parentOpts, obj.parent ?? '', (v) => {
-                if (v) obj.parent = v; else delete obj.parent;
-                rebuild();
-            })));
-            if (doc.materials && obj.type !== 'group') {
-                const matOpts = Object.keys(doc.materials).map((m) => ({ value: m, label: m }));
-                container.appendChild(fieldRow('appearance', 'material', selectInput(matOpts, obj.material, (v) => {
-                    obj.material = v;
-                    rebuild();
-                })));
-            }
+            container.scrollTop = scrollTop;
+            return;
         }
 
-        // motion (drivers of the current patch)
+        // selected object properties -------------------------------------------------
+        const fieldsTitle = h4(obj.id);
+        fieldsTitle.className = 'insp-obj-title';
+        const del = document.createElement('button');
+        del.className = 'insp-del';
+        del.textContent = 'Delete';
+        del.title = 'Remove this object and everything attached to it';
+        del.addEventListener('click', () => {
+            if (confirm(`Delete '${obj.id}' and everything attached to it?`)) deleteObject(obj.id);
+        });
+        fieldsTitle.appendChild(del);
+        container.appendChild(fieldsTitle);
+
+        obj.position ??= [0, 0, 0];
+        const live = () => ctx.liveTransform(obj.id);
+        transformRefs.id = obj.id;
+        transformRefs.pos = [0, 1, 2].map((i) => numberInput(obj.position[i] ?? 0, 0.1, (v) => {
+            obj.position[i] = v;
+            live();
+        }));
+        container.appendChild(fieldRow('position', 'position [x, y, z] in scene units — or just drag the arrows in the scene', ...transformRefs.pos));
+        transformRefs.rot = numberInput(obj.rotationZ ?? 0, 1, (v) => {
+            obj.rotationZ = v;
+            live();
+        }, 'rotationZ (degrees)');
+        container.appendChild(fieldRow('angle °', 'rotationZ — or drag the ring in Rotate mode', transformRefs.rot));
+
+        const rebuild = () => ctx.commit({ rebuild: true });
+        if (obj.size) {
+            container.appendChild(fieldRow('size', 'size [x, y, z]',
+                ...[0, 1, 2].map((i) => numberInput(obj.size[i] ?? 1, 0.1, (v) => {
+                    obj.size[i] = v;
+                    rebuild();
+                }))));
+        }
+        if (obj.body === 'dynamic') {
+            container.appendChild(fieldRow('mass', 'mass — heavier is harder to push around', numberInput(obj.mass ?? 1, 0.1, (v) => {
+                obj.mass = v;
+                rebuild();
+            })));
+        }
+        const idx = doc.objects.indexOf(obj);
+        const parentOpts = [{ value: '', label: '(the world)' },
+            ...doc.objects.slice(0, idx).map((o) => ({ value: o.id, label: o.id }))];
+        container.appendChild(fieldRow('attached to', 'parent — when that object moves or turns, this one rides along', selectInput(parentOpts, obj.parent ?? '', (v) => {
+            if (v) obj.parent = v; else delete obj.parent;
+            rebuild();
+        })));
+        if (doc.materials && obj.type !== 'group') {
+            const matOpts = Object.keys(doc.materials).map((m) => ({ value: m, label: m }));
+            container.appendChild(fieldRow('appearance', 'material', selectInput(matOpts, obj.material, (v) => {
+                obj.material = v;
+                rebuild();
+            })));
+        }
+
+        // control: only what drives THIS object ----------------------------------------
         const patch = ctx.getCurrentPatch();
         doc.patches ??= {};
         doc.patches[patch] ??= [];
-        const drivers = doc.patches[patch];
-        const dTitle = document.createElement('h4');
-        dTitle.className = 'insp-obj-title';
-        dTitle.textContent = `Motion · ${patch}`;
-        dTitle.title = 'Drivers: each one turns an input into an object\'s angle';
-        const saveAs = document.createElement('button');
-        saveAs.className = 'insp-del';
-        saveAs.textContent = 'Save as…';
-        saveAs.title = 'Keep these motion settings as a new named setup';
-        saveAs.addEventListener('click', () => {
-            const name = prompt('Name for this motion setup:');
-            if (!name || doc.patches[name]) return;
-            doc.patches[name] = JSON.parse(JSON.stringify(drivers));
-            ctx.commit({ rebuild: true });
-        });
-        dTitle.appendChild(saveAs);
-        container.appendChild(dTitle);
+        const allDrivers = doc.patches[patch];
+        const mine = allDrivers.filter((d) => d.target === obj.id);
 
-        const refOpts = [];
-        for (let i = 0; i < 4; i++) refOpts.push({ value: `ch:${i}`, label: `Knob ${i}` });
-        for (const n of doc.nodes ?? []) refOpts.push({ value: `node:${n.id}`, label: `Node ${n.id}` });
-        const targetOpts = (doc.objects ?? []).map((o) => ({ value: o.id, label: o.id }));
+        container.appendChild(h4('Control', 'Motion links: how inputs turn this object'));
 
-        drivers.forEach((d, i) => {
-            const box = document.createElement('div');
-            box.className = 'insp-driver';
-            const cap = document.createElement('div');
-            cap.className = 'insp-driver-cap';
-            cap.textContent = `${d.target} ← ${humanRef(d.input)}`;
-            const delD = document.createElement('button');
-            delD.className = 'insp-del';
-            delD.textContent = '×';
-            delD.title = 'Remove this motion link';
-            delD.addEventListener('click', () => {
-                drivers.splice(i, 1);
+        const inputOpts = [];
+        for (let i = 0; i < 4; i++) inputOpts.push({ value: `ch:${i}`, label: `Knob ${i}` });
+        for (const n of doc.nodes ?? []) inputOpts.push({ value: `node:${n.id}`, label: `Node ${n.id}` });
+
+        if (!mine.length) {
+            const none = document.createElement('p');
+            none.className = 'hint';
+            none.textContent = 'Nothing controls this object.';
+            container.appendChild(none);
+        } else {
+            const legend = document.createElement('p');
+            legend.className = 'ctl-legend';
+            legend.textContent = 'Angles in degrees. Swing = how far a full knob turn moves it.';
+            container.appendChild(legend);
+        }
+
+        for (const d of mine) {
+            const card = document.createElement('div');
+            card.className = 'ctl-card';
+
+            const sentence = document.createElement('div');
+            sentence.className = 'ctl-sentence';
+            const inputSel = selectInput(inputOpts, d.input, (v) => {
+                d.input = v;
+                ctx.commit({});
+                render();
+            }, 'which input drives this object');
+            sentence.appendChild(inputSel);
+            const verb = document.createElement('span');
+            verb.textContent = 'turns this object';
+            sentence.appendChild(verb);
+            const disc = document.createElement('button');
+            disc.className = 'insp-del';
+            disc.textContent = 'Disconnect';
+            disc.title = 'This input stops controlling the object';
+            disc.addEventListener('click', () => {
+                allDrivers.splice(allDrivers.indexOf(d), 1);
                 ctx.commit({ rebuild: true });
             });
-            cap.appendChild(delD);
-            box.appendChild(cap);
+            sentence.appendChild(disc);
+            card.appendChild(sentence);
 
-            const live = () => ctx.commit({});
-            box.appendChild(fieldRow('moves', 'driver target object', selectInput(targetOpts, d.target, (v) => { d.target = v; ctx.commit({ rebuild: true }); })));
-            box.appendChild(fieldRow('from', 'driver input (channel or node)', selectInput(refOpts, d.input, (v) => { d.input = v; live(); render(); })));
-            box.appendChild(fieldRow('rest °', 'baseline — angle when the input is 0', numberInput(d.baseline ?? 0, 1, (v) => { d.baseline = v; live(); })));
-            box.appendChild(fieldRow('sweep °', 'amplitude — how far a full input turn moves it', numberInput(d.amplitude ?? 0, 1, (v) => { d.amplitude = v; live(); })));
-            box.appendChild(fieldRow('smoothing', 'lerp — 0 snaps instantly, 0.2 eases like the original', numberInput(d.lerp ?? 0, 0.05, (v) => { d.lerp = v; live(); })));
+            const liveD = () => ctx.commit({});
+            card.appendChild(fieldRow('starting angle °', 'baseline — where it sits when the knob is at zero',
+                numberInput(d.baseline ?? 0, 1, (v) => { d.baseline = v; liveD(); })));
+            card.appendChild(fieldRow('swing °', 'amplitude — negative swings the other way',
+                numberInput(d.amplitude ?? 0, 1, (v) => { d.amplitude = v; liveD(); })));
+
+            const lerpVal = d.lerp ?? 0;
+            const preset = RESPONSE_PRESETS.find((p) => Math.abs(p.value - lerpVal) < 0.011);
+            const respOpts = [...RESPONSE_PRESETS];
+            if (!preset) respOpts.push({ value: lerpVal, label: `custom (${lerpVal})` });
+            card.appendChild(fieldRow('response', 'lerp — how quickly it chases the knob',
+                selectInput(respOpts, preset?.value ?? lerpVal, (v) => {
+                    d.lerp = Number.parseFloat(v);
+                    liveD();
+                })));
+
             const inv = document.createElement('input');
             inv.type = 'checkbox';
             inv.checked = Boolean(d.invert);
-            inv.title = 'invert — turn the knob one way, the object goes the other';
-            inv.addEventListener('change', () => { d.invert = inv.checked; live(); });
-            box.appendChild(fieldRow('reverse', 'invert', inv));
-            container.appendChild(box);
-        });
+            inv.title = 'invert — knob one way, object the other';
+            inv.addEventListener('change', () => { d.invert = inv.checked; liveD(); });
+            card.appendChild(fieldRow('flip direction', 'invert', inv));
+
+            container.appendChild(card);
+        }
 
         const addD = document.createElement('button');
         addD.className = 'insp-add-driver';
-        addD.textContent = '+ Add motion link';
+        addD.textContent = '+ Connect a knob to this object';
         addD.addEventListener('click', () => {
-            drivers.push({
-                target: selected ?? doc.objects?.[0]?.id,
+            allDrivers.push({
+                target: obj.id,
                 property: 'rotationZ',
                 input: 'ch:0',
-                baseline: 0,
+                baseline: obj.rotationZ ?? 0,
                 amplitude: 90,
                 lerp: 0.2,
             });
@@ -361,7 +386,6 @@ export function mountInspector(container, ctx) {
     render();
     return {
         render,
-        /** gizmo moved the selected object: reflect doc values in the fields */
         syncTransform() {
             const doc = ctx.getDoc();
             const obj = doc?.objects?.find((o) => o.id === transformRefs.id);
