@@ -297,16 +297,20 @@
     padding-right: 0.25rem;
 }
 .hud .twin-badge { background: transparent; border: none; padding: 0.1rem 0.3rem; }
-/* Inspector — the editing-verbs panel, floats like all HUD */
+/* Inspector — right-side drawer over the viewport */
 .hud.inspector {
     top: 4.4rem;
     right: 0.75rem;
-    bottom: 3.4rem;
-    width: 300px;
+    bottom: 0.75rem;
+    width: clamp(360px, 30vw, 470px);
     max-width: calc(100vw - 1.5rem);
     display: block;
     overflow-y: auto;
     font-size: 0.85rem;
+    z-index: 8; /* over the orbit-hint corner */
+    background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+    box-shadow: var(--shadow-lg);
+    padding: 0.75rem 0.95rem;
 }
 .hud.inspector[hidden] { display: none; }
 .insp-head {
@@ -391,14 +395,16 @@
     padding: 0.18rem 0;
 }
 .insp-row > span {
-    width: 4.6rem;
+    width: 7.2rem;
     flex-shrink: 0;
     font-size: 0.75rem;
+    line-height: 1.2;
     color: var(--text-muted);
     font-family: ui-monospace, monospace;
+    white-space: nowrap;
 }
 .insp-inputs { display: flex; gap: 0.3rem; flex: 1; }
-.insp-inputs input[type=number], .insp-inputs select {
+.insp-inputs input[type=number], .insp-inputs input[type=text], .insp-inputs select {
     width: 100%;
     min-width: 0;
     background: var(--bg-primary);
@@ -467,11 +473,14 @@
 .ctl-sentence {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.45rem;
+    row-gap: 0.3rem;
     margin-bottom: 0.35rem;
     font-size: 0.82rem;
     color: var(--text-primary);
 }
+.ctl-sentence > span { white-space: nowrap; }
 .ctl-sentence select {
     background: var(--bg-primary);
     color: var(--text-primary);
