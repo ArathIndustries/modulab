@@ -297,6 +297,113 @@
     padding-right: 0.25rem;
 }
 .hud .twin-badge { background: transparent; border: none; padding: 0.1rem 0.3rem; }
+/* Inspector — the editing-verbs panel, floats like all HUD */
+.hud.inspector {
+    top: 4.4rem;
+    right: 0.75rem;
+    bottom: 3.4rem;
+    width: 300px;
+    max-width: calc(100vw - 1.5rem);
+    display: block;
+    overflow-y: auto;
+    font-size: 0.85rem;
+}
+.hud.inspector[hidden] { display: none; }
+.insp-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.4rem;
+}
+.insp-head b { color: var(--text-primary); font-size: 0.9rem; flex: 1; }
+.insp-head-btns { display: flex; gap: 0.35rem; }
+.insp-head-btns button {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+}
+.insp-head-btns button:hover { color: var(--text-primary); background: var(--bg-hover); }
+.draft-chip {
+    font-size: 0.7rem;
+    font-family: ui-monospace, monospace;
+    color: var(--status-good);
+    border: 1px solid var(--status-good);
+    border-radius: 999px;
+    padding: 0.05rem 0.5rem;
+}
+.hud.inspector h4 {
+    margin: 0.8rem 0 0.35rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.insp-tree {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-family: ui-monospace, monospace;
+    font-size: 0.78rem;
+}
+.insp-tree li {
+    padding: 0.2rem 0.4rem;
+    border-radius: 5px;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+.insp-tree li:hover { background: var(--bg-hover); }
+.insp-tree li.selected {
+    background: color-mix(in srgb, var(--accent-primary) 18%, transparent);
+    color: var(--text-primary);
+}
+.insp-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.18rem 0;
+}
+.insp-row > span {
+    width: 4.6rem;
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: ui-monospace, monospace;
+}
+.insp-inputs { display: flex; gap: 0.3rem; flex: 1; }
+.insp-inputs input[type=number], .insp-inputs select {
+    width: 100%;
+    min-width: 0;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    padding: 0.22rem 0.35rem;
+    font-size: 0.78rem;
+    font-family: ui-monospace, monospace;
+}
+.insp-driver {
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    padding: 0.4rem 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.insp-driver-cap {
+    font-family: ui-monospace, monospace;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.2rem;
+}
+.btn-ghost.active {
+    background: var(--accent-primary);
+    color: var(--text-inverse);
+    border-color: var(--accent-primary);
+}
+
 .stage-msg {
     position: absolute;
     inset: 0;

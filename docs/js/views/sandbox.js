@@ -1,17 +1,20 @@
 /**
- * Workspace view — modulab's product surface. The 3D scene IS the page:
- * a full-bleed viewport with everything else floating over it as HUD
- * (ruling 2026-07-27 — no side panels stealing viewport space; analysis
- * overlays will live inside the scene itself, on this substrate).
+ * Workspace view — modulab's product surface. Full-bleed viewport + HUD,
+ * scene from a scenes-as-data document, and the editing verbs
+ * (AUTHORING.md layer 3): click-select, inspector, live document edits
+ * with hot-reload, per-scene localStorage drafts, export/import.
  *
- * The scene comes from a scenes-as-data document via js/scene/engine.js;
- * ?scene=<id> picks it (default pol-lever-arm).
+ * Document lifecycle: original (scenes/<id>.json) -> draft (localStorage,
+ * created on first edit) -> export (file). The document is the single
+ * source of truth; object edits rebuild the scene from it (geometry is
+ * cached so rebuilds are instant), driver edits apply live by reference.
  */
 import * as THREE from '../../vendor/three.module.js';
 import { OrbitControls } from '../../vendor/OrbitControls.js';
 import { RoomEnvironment } from '../../vendor/RoomEnvironment.js';
 import { stream } from '../stream.js';
 import { mountConnectBar } from '../components/connectbar.js';
+import { mountInspector } from '../components/inspector.js';
 import { instantiateScene } from '../scene/engine.js';
 
 const SERIES_HEX = {
@@ -34,9 +37,11 @@ export function renderSandbox(container) {
                     <span class="scene-name" id="scene-name"></span>
                     <span class="patch-toggle" id="patch-toggle" hidden></span>
                     <button class="btn btn-ghost btn-sm" id="ws-reset">Reset</button>
+                    <button class="btn btn-ghost btn-sm" id="ws-edit">Edit</button>
                 </div>
                 <div class="hud hud-bl" id="ws-readout"></div>
                 <div class="hud hud-br">drag · orbit &nbsp; wheel · zoom &nbsp; right-drag · pan</div>
+                <div class="hud inspector" id="inspector" hidden></div>
             </div>
         </div>
     `;
@@ -47,7 +52,11 @@ export function renderSandbox(container) {
     const readout = container.querySelector('#ws-readout');
     const patchEl = container.querySelector('#patch-toggle');
     const sceneNameEl = container.querySelector('#scene-name');
+    const inspectorEl = container.querySelector('#inspector');
+    const editBtn = container.querySelector('#ws-edit');
+    const resetBtn = container.querySelector('#ws-reset');
     const mode = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+    const urlParams = new URLSearchParams(window.location.search);
 
     // --- Viewport shell ---------------------------------------------------
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -78,7 +87,7 @@ export function renderSandbox(container) {
     // --- Stream state -------------------------------------------------------
     const lastValues = new Map();
     const chBadges = new Map();
-    const driverBadges = [];
+    let driverBadges = [];
 
     function ensureChannelBadge(ch) {
         if (chBadges.has(ch)) return;
@@ -94,50 +103,155 @@ export function renderSandbox(container) {
         ensureChannelBadge(ch);
     });
 
-    // --- Load the scene document ------------------------------------------------
-    const sceneId = new URLSearchParams(window.location.search).get('scene') || 'pol-lever-arm';
+    // --- Document lifecycle ---------------------------------------------------
+    const sceneId = urlParams.get('scene') || 'pol-lever-arm';
+    const draftKey = `modulab-draft-${sceneId}`;
+    let doc = null;
+    let isDraft = false;
     let inst = null;
-    let raf = null;
+    let inspector = null;
+    let selectedId = null;
+    let selectionHelper = null;
+    let firstBuild = true;
+    let reloadTimer = null;
     let destroyed = false;
-    let frame = 0;
-    let lastT = performance.now();
 
-    (async () => {
-        let def;
-        try {
-            const r = await fetch(`scenes/${sceneId}.json`);
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            def = await r.json();
-        } catch (err) {
-            stageMsg.hidden = false;
-            stageMsg.textContent = `Scene '${sceneId}' failed to load: ${err.message}`;
-            return;
+    function saveDraft() {
+        isDraft = true;
+        try { localStorage.setItem(draftKey, JSON.stringify(doc)); } catch { /* storage full */ }
+    }
+
+    function markDirty({ reload }) {
+        saveDraft();
+        if (reload) {
+            clearTimeout(reloadTimer);
+            reloadTimer = setTimeout(() => buildScene(), 250);
         }
+        inspector?.refresh();
+    }
 
-        inst = await instantiateScene(def, {
+    function exportDoc() {
+        const blob = new Blob([JSON.stringify(doc, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${doc.meta?.id ?? sceneId}.json`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
+    function importDoc(parsed) {
+        doc = parsed;
+        saveDraft();
+        buildScene();
+        inspector?.refresh();
+    }
+
+    async function revertDraft() {
+        localStorage.removeItem(draftKey);
+        isDraft = false;
+        await loadDoc(true);
+        buildScene();
+        inspector?.refresh();
+    }
+
+    async function loadDoc(forceOriginal = false) {
+        if (!forceOriginal) {
+            const draft = localStorage.getItem(draftKey);
+            if (draft) {
+                try {
+                    doc = JSON.parse(draft);
+                    isDraft = true;
+                    return;
+                } catch { localStorage.removeItem(draftKey); }
+            }
+        }
+        const r = await fetch(`scenes/${sceneId}.json`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        doc = await r.json();
+    }
+
+    // --- Selection ---------------------------------------------------------------
+    function setSelected(id) {
+        selectedId = id;
+        if (selectionHelper) {
+            scene.remove(selectionHelper);
+            selectionHelper.dispose();
+            selectionHelper = null;
+        }
+        const target = id ? inst?.objects.get(id) : null;
+        if (target) {
+            selectionHelper = new THREE.BoxHelper(target.group, mode === 'light' ? 0x2a78d6 : 0x3987e5);
+            scene.add(selectionHelper);
+        }
+        inspector?.refresh();
+    }
+
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let downAt = null;
+
+    canvas.addEventListener('pointerdown', (e) => {
+        downAt = { x: e.clientX, y: e.clientY, t: performance.now(), button: e.button };
+    });
+    canvas.addEventListener('pointerup', (e) => {
+        if (!downAt || downAt.button !== 0) return;
+        const moved = Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y);
+        const held = performance.now() - downAt.t;
+        downAt = null;
+        if (moved > 5 || held > 400 || !inst) return; // that was an orbit, not a click
+
+        const rect = canvas.getBoundingClientRect();
+        pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointer, camera);
+        const hits = raycaster.intersectObjects(scene.children, true);
+        for (const hit of hits) {
+            let node = hit.object;
+            while (node && node.userData?.objectId == null) node = node.parent;
+            if (node?.userData?.objectId) {
+                setSelected(node.userData.objectId);
+                return;
+            }
+        }
+        setSelected(null);
+    });
+
+    // --- Scene (re)build ------------------------------------------------------------
+    async function buildScene() {
+        if (destroyed || !doc) return;
+        const keepSelection = selectedId;
+        setSelected(null);
+        inst?.dispose();
+        inst = await instantiateScene(doc, {
             scene,
             getChannel: (n) => (lastValues.has(n) ? lastValues.get(n) / 1023 : null),
         });
-        sceneNameEl.textContent = inst.meta.name ?? sceneId;
+        if (destroyed) { inst.dispose(); return; }
 
-        const cam = inst.env.camera ?? { position: [0, 4, 12], target: [0, 0, 0], fov: 60 };
-        camera.fov = cam.fov ?? 60;
-        camera.position.set(...cam.position);
-        controls.target.set(...(cam.target ?? [0, 0, 0]));
-        camera.updateProjectionMatrix();
-        controls.update();
+        sceneNameEl.textContent = (inst.meta.name ?? sceneId) + (isDraft ? ' *' : '');
 
-        if (inst.env.grid) {
-            const grid = new THREE.GridHelper(80, 80,
-                mode === 'light' ? 0xaab0ba : 0x3a4150,
-                mode === 'light' ? 0xd3d7de : 0x232833);
-            grid.position.y = inst.env.gridY ?? 0;
-            scene.add(grid);
-            const axes = new THREE.AxesHelper(2.2);
-            axes.position.set(cam.target?.[0] ?? 0, grid.position.y + 0.01, 0);
-            scene.add(axes);
+        if (firstBuild) {
+            const cam = inst.env.camera ?? { position: [0, 4, 12], target: [0, 0, 0], fov: 60 };
+            camera.fov = cam.fov ?? 60;
+            camera.position.set(...cam.position);
+            controls.target.set(...(cam.target ?? [0, 0, 0]));
+            camera.updateProjectionMatrix();
+            controls.update();
+
+            if (inst.env.grid) {
+                const grid = new THREE.GridHelper(80, 80,
+                    mode === 'light' ? 0xaab0ba : 0x3a4150,
+                    mode === 'light' ? 0xd3d7de : 0x232833);
+                grid.position.y = inst.env.gridY ?? 0;
+                scene.add(grid);
+                const axes = new THREE.AxesHelper(2.2);
+                axes.position.set(cam.target?.[0] ?? 0, grid.position.y + 0.01, 0);
+                scene.add(axes);
+            }
+            firstBuild = false;
         }
 
+        // Patch selector (rebuilt each time; patches may have been edited)
         if (inst.patchNames.length > 1) {
             const key = `modulab-patch-${inst.meta.id}`;
             const saved = localStorage.getItem(key);
@@ -151,10 +265,16 @@ export function renderSandbox(container) {
                 radio.addEventListener('change', () => {
                     inst.setPatch(radio.value);
                     localStorage.setItem(key, radio.value);
+                    inspector?.refresh();
                 });
             }
+        } else {
+            patchEl.hidden = true;
         }
 
+        // Driver readout badges
+        for (const b of driverBadges) b.closest('.twin-badge')?.remove();
+        driverBadges = [];
         for (const d of inst.driverReadout()) {
             const el = document.createElement('span');
             el.className = 'twin-badge';
@@ -163,10 +283,54 @@ export function renderSandbox(container) {
             driverBadges.push(el.querySelector('b'));
         }
 
-        container.querySelector('#ws-reset').addEventListener('click', () => inst.resetDynamics());
+        if (keepSelection && inst.objects.has(keepSelection)) setSelected(keepSelection);
+    }
+
+    // --- Editor toggle -----------------------------------------------------------
+    function openInspector() {
+        inspectorEl.hidden = false;
+        editBtn.classList.add('active');
+        inspector ??= mountInspector(inspectorEl, {
+            getDoc: () => doc,
+            markDirty,
+            getSelected: () => selectedId,
+            setSelected,
+            isDraft: () => isDraft,
+            exportDoc,
+            importDoc,
+            revertDraft,
+            getCurrentPatch: () => inst?.currentPatch ?? doc?.defaultPatch ?? 'default',
+        });
+        inspector.refresh();
+    }
+    function closeInspector() {
+        inspectorEl.hidden = true;
+        editBtn.classList.remove('active');
+    }
+    editBtn.addEventListener('click', () => {
+        if (inspectorEl.hidden) openInspector(); else closeInspector();
+    });
+
+    resetBtn.addEventListener('click', () => inst?.resetDynamics());
+
+    // --- Boot ---------------------------------------------------------------------
+    (async () => {
+        try {
+            await loadDoc();
+        } catch (err) {
+            stageMsg.hidden = false;
+            stageMsg.textContent = `Scene '${sceneId}' failed to load: ${err.message}`;
+            return;
+        }
+        await buildScene();
+        if (urlParams.has('edit')) openInspector();
     })();
 
-    // --- Render loop --------------------------------------------------------
+    // --- Render loop -----------------------------------------------------------
+    let raf = null;
+    let frame = 0;
+    let lastT = performance.now();
+
     function sizeRenderer() {
         const w = canvas.parentElement.clientWidth;
         const h = canvas.parentElement.clientHeight;
@@ -187,6 +351,7 @@ export function renderSandbox(container) {
         lastT = now;
 
         inst?.tick(dt);
+        selectionHelper?.update();
 
         frame += 1;
         if (frame % 6 === 0) {
@@ -205,14 +370,16 @@ export function renderSandbox(container) {
     active = {
         teardown() {
             destroyed = true;
+            clearTimeout(reloadTimer);
             if (raf) cancelAnimationFrame(raf);
             offSample();
             unmountBar();
             ro.disconnect();
+            inspector?.destroy();
             inst?.dispose();
             renderer.dispose();
             scene.traverse((o) => {
-                o.geometry?.dispose?.();
+                if (o.geometry && !o.geometry.userData?.cached) o.geometry.dispose();
                 o.material?.dispose?.();
             });
         },

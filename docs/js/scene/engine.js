@@ -13,6 +13,30 @@ import { parseOBJ } from '../lib/objparser.js';
 
 const DEG = Math.PI / 180;
 
+// Model geometries cached across instantiations — hot-reload during editing
+// must not refetch or reparse. Cached geometries are never disposed.
+const geoCache = new Map(); // url -> Promise<BufferGeometry|null>
+
+function loadGeometry(url, warn) {
+    if (!geoCache.has(url)) {
+        geoCache.set(url, fetch(url)
+            .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`))))
+            .then((text) => {
+                const { positions, normals } = parseOBJ(text);
+                const geo = new THREE.BufferGeometry();
+                geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+                geo.userData.cached = true;
+                return geo;
+            })
+            .catch((err) => {
+                warn(`model at '${url}' failed to load (${err.message})`);
+                return null;
+            }));
+    }
+    return geoCache.get(url);
+}
+
 export async function instantiateScene(def, { scene, getChannel }) {
     const warn = (msg) => console.warn(`[scene:${def.meta?.id ?? '?'}] ${msg}`);
 
@@ -31,20 +55,11 @@ export async function instantiateScene(def, { scene, getChannel }) {
     }
     const fallbackMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
 
-    // --- Models (shared geometries) -----------------------------------------
+    // --- Models (shared geometries, cached across reloads) -------------------
     const modelGeos = new Map();
     await Promise.all(Object.entries(def.models ?? {}).map(async ([id, m]) => {
-        try {
-            const r = await fetch(m.url);
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            const { positions, normals } = parseOBJ(await r.text());
-            const geo = new THREE.BufferGeometry();
-            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
-            modelGeos.set(id, geo);
-        } catch (err) {
-            warn(`model '${id}' failed to load (${err.message}); instances get placeholder boxes`);
-        }
+        const geo = await loadGeometry(m.url, warn);
+        if (geo) modelGeos.set(id, geo);
     }));
 
     // --- Objects --------------------------------------------------------------
@@ -56,6 +71,7 @@ export async function instantiateScene(def, { scene, getChannel }) {
         if (!o.id || objects.has(o.id)) { warn(`bad/duplicate object id ${o.id}`); continue; }
         const group = new THREE.Group();
         group.name = o.id;
+        group.userData.objectId = o.id; // raycast selection resolves to this
         group.position.set(...(o.position ?? [0, 0, 0]));
         group.rotation.z = (o.rotationZ ?? 0) * DEG;
 
@@ -264,13 +280,16 @@ export async function instantiateScene(def, { scene, getChannel }) {
         },
         dispose() {
             for (const o of objects.values()) {
+                o.body && world.removeBody(o.body);
                 o.group.parent?.remove(o.group);
                 o.group.traverse((child) => {
-                    child.geometry?.dispose?.();
+                    if (child.geometry && !child.geometry.userData?.cached) {
+                        child.geometry.dispose();
+                    }
                 });
             }
             for (const m of materials.values()) m.dispose();
-            for (const geo of modelGeos.values()) geo.dispose();
+            // cached model geometries stay alive for the next instantiation
         },
     };
 }
