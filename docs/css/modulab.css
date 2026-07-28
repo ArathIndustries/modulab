@@ -521,6 +521,16 @@
     border-color: var(--accent-primary);
 }
 
+.update-note {
+    top: 4.4rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    border-color: var(--accent-primary);
+}
+
 .stage-msg {
     position: absolute;
     inset: 0;

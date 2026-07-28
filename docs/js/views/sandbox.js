@@ -160,9 +160,13 @@ export function renderSandbox(container) {
     let reloadTimer = null;
     let destroyed = false;
 
+    let baselineStr = null; // the shipped original this draft was edited from
+
     function saveDraft() {
         isDraft = true;
-        try { localStorage.setItem(draftKey, JSON.stringify(doc)); } catch { /* storage full */ }
+        try {
+            localStorage.setItem(draftKey, JSON.stringify({ __modulab: 1, baseline: baselineStr, doc }));
+        } catch { /* storage full */ }
     }
 
     // --- Undo/redo: coalesced document snapshots -----------------------------
@@ -247,19 +251,51 @@ export function renderSandbox(container) {
     }
 
     async function loadDoc(forceOriginal = false) {
+        const r = await fetch(`scenes/${sceneId}.json`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const originalStr = JSON.stringify(await r.clone().json());
+
         if (!forceOriginal) {
-            const draft = localStorage.getItem(draftKey);
-            if (draft) {
+            const raw = localStorage.getItem(draftKey);
+            if (raw) {
                 try {
-                    doc = JSON.parse(draft);
-                    isDraft = true;
+                    const rec = JSON.parse(raw);
+                    if (rec && rec.__modulab === 1) {
+                        doc = rec.doc;
+                        baselineStr = rec.baseline;
+                        isDraft = true;
+                    } else {
+                        // legacy draft (no baseline recorded): keep the edits but
+                        // assume the shipped scene may have moved — say so
+                        doc = rec;
+                        baselineStr = null;
+                        isDraft = true;
+                    }
+                    if (baselineStr !== originalStr) showUpdateNote();
+                    if (baselineStr === null) baselineStr = originalStr;
                     return;
                 } catch { localStorage.removeItem(draftKey); }
             }
         }
-        const r = await fetch(`scenes/${sceneId}.json`);
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        doc = await r.json();
+        doc = JSON.parse(originalStr);
+        baselineStr = originalStr;
+    }
+
+    function showUpdateNote() {
+        if (container.querySelector('.update-note')) return;
+        const note = document.createElement('div');
+        note.className = 'hud update-note';
+        note.innerHTML = `
+            <span>This scene has been updated — you're viewing your edited copy.</span>
+            <button class="btn btn-sm" data-a="load">Load update (discard my edits)</button>
+            <button class="btn btn-ghost btn-sm" data-a="keep">Keep mine</button>
+        `;
+        container.querySelector('.stage-full').appendChild(note);
+        note.querySelector('[data-a="load"]').addEventListener('click', () => {
+            note.remove();
+            revertDraft();
+        });
+        note.querySelector('[data-a="keep"]').addEventListener('click', () => note.remove());
     }
 
     // --- Selection ---------------------------------------------------------------
