@@ -222,6 +222,29 @@
         1.4,
         0
       ]
+    },
+    {
+      "type": "contacts",
+      "attach": "toy",
+      "scale": 0.03,
+      "color": "#c98500",
+      "max": 6
+    },
+    {
+      "type": "trail",
+      "attach": "toy",
+      "seconds": 3,
+      "color": "#9085e9"
+    },
+    {
+      "type": "label",
+      "attach": "toy",
+      "text": "v {speed} \u00b7 KE {ke}",
+      "offset": [
+        0,
+        2.3,
+        0
+      ]
     }
   ],
   "patches": {

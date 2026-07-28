@@ -308,6 +308,29 @@ export async function instantiateScene(def, { scene, getChannel }) {
             const label = makeLabelSprite();
             scene.add(label.sprite);
             overlays.push({ ...ov, target, label });
+        } else if (ov.type === 'contacts') {
+            // Normal-force arrows straight from the solver's contact equations
+            const pool = [];
+            const color = new THREE.Color(ov.color ?? '#eda100');
+            for (let i = 0; i < (ov.max ?? 6); i++) {
+                const arrow = new THREE.ArrowHelper(
+                    new THREE.Vector3(0, 1, 0), new THREE.Vector3(), 1, color, 0.35, 0.22);
+                arrow.visible = false;
+                scene.add(arrow);
+                pool.push(arrow);
+            }
+            overlays.push({ ...ov, target, pool });
+        } else if (ov.type === 'trail') {
+            const cap = 240;
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(cap * 3), 3));
+            geo.setDrawRange(0, 0);
+            const line = new THREE.Line(geo, new THREE.LineBasicMaterial({
+                color: new THREE.Color(ov.color ?? '#9085e9'), transparent: true, opacity: 0.7,
+            }));
+            line.frustumCulled = false;
+            scene.add(line);
+            overlays.push({ ...ov, target, trail: { line, geo, points: [], cap, lastAt: 0 } });
         } else {
             warn(`overlay type '${ov.type}' unknown`);
         }
@@ -335,14 +358,64 @@ export async function instantiateScene(def, { scene, getChannel }) {
                 const off = ov.offset ?? [0, 1, 0];
                 ov.label.sprite.position.set(pos.x + off[0], pos.y + off[1], pos.z + off[2]);
                 let text = ov.text ?? '{deg}';
-                if (text.includes('{deg}')) {
-                    text = text.replace('{deg}', (ov.target.group.rotation.z / DEG).toFixed(0));
+                const body = ov.target.body;
+                const mass = ov.target.def.mass ?? 0;
+                const speed = body ? body.velocity.length() : 0;
+                const height = pos.y - (def.environment?.gridY ?? 0);
+                const subs = {
+                    '{deg}': (ov.target.group.rotation.z / DEG).toFixed(0),
+                    '{speed}': speed.toFixed(1),
+                    '{height}': height.toFixed(1),
+                    '{ke}': (0.5 * mass * speed * speed).toFixed(1),
+                    '{pe}': (mass * gLen * height).toFixed(1),
+                };
+                for (const [token, val] of Object.entries(subs)) {
+                    if (text.includes(token)) text = text.replaceAll(token, val);
                 }
                 if (text.includes('{value}')) {
                     const v = resolveRef(ov.ref ?? '');
-                    text = text.replace('{value}', v == null ? '—' : (v * 1023).toFixed(0));
+                    text = text.replaceAll('{value}', v == null ? '—' : (v * 1023).toFixed(0));
                 }
                 ov.label.setText(text);
+            } else if (ov.pool) {
+                // contacts: show one arrow per solver contact on the attach body
+                const body = ov.target.body;
+                let used = 0;
+                if (body) {
+                    for (const eq of world.contacts ?? world.contactEquations ?? []) {
+                        if (used >= ov.pool.length) break;
+                        if (eq.bi !== body && eq.bj !== body) continue;
+                        const own = eq.bi === body;
+                        const px = (own ? eq.bi.position.x + eq.ri.x : eq.bj.position.x + eq.rj.x);
+                        const py = (own ? eq.bi.position.y + eq.ri.y : eq.bj.position.y + eq.rj.y);
+                        const pz = (own ? eq.bi.position.z + eq.ri.z : eq.bj.position.z + eq.rj.z);
+                        // ni points bi -> bj; force ON the attach body pushes along
+                        // ni when it is bj, against when it is bi
+                        const s = own ? -1 : 1;
+                        const f = Math.abs(eq.multiplier ?? 0) * (ov.scale ?? 0.02);
+                        if (f < 0.2) continue;
+                        const arrow = ov.pool[used];
+                        arrow.visible = true;
+                        arrow.position.set(px, py, pz);
+                        arrow.setDirection(new THREE.Vector3(s * eq.ni.x, s * eq.ni.y, s * eq.ni.z));
+                        arrow.setLength(Math.min(f, 8), 0.35, 0.22);
+                        used += 1;
+                    }
+                }
+                for (let i = used; i < ov.pool.length; i++) ov.pool[i].visible = false;
+            } else if (ov.trail) {
+                const t = ov.trail;
+                const nowMs = performance.now();
+                if (nowMs - t.lastAt > 40) { // ~25 samples/s
+                    t.lastAt = nowMs;
+                    t.points.push([pos.x, pos.y, pos.z]);
+                    const keep = Math.round((ov.seconds ?? 3) * 25);
+                    while (t.points.length > Math.min(keep, t.cap)) t.points.shift();
+                    const attr = t.geo.getAttribute('position');
+                    t.points.forEach((p, i) => attr.setXYZ(i, p[0], p[1], p[2]));
+                    attr.needsUpdate = true;
+                    t.geo.setDrawRange(0, t.points.length);
+                }
             }
         }
     }
@@ -420,6 +493,12 @@ export async function instantiateScene(def, { scene, getChannel }) {
                     scene.remove(ov.label.sprite);
                     ov.label.sprite.material.map.dispose();
                     ov.label.sprite.material.dispose();
+                }
+                if (ov.pool) for (const a of ov.pool) { scene.remove(a); a.dispose(); }
+                if (ov.trail) {
+                    scene.remove(ov.trail.line);
+                    ov.trail.geo.dispose();
+                    ov.trail.line.material.dispose();
                 }
             }
             for (const o of objects.values()) {

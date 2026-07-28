@@ -141,10 +141,23 @@ In-scene analysis, declared by the document and rendered inside the world:
 ```
 
 `vector` draws a live arrow on an object — quantities v0: `velocity` (dynamic
-body), `weight` (mass·g, down), `gravity` (unit). `label` floats a text sprite;
-`{deg}` substitutes the attach object's rotationZ, `{value}` a `ref` channel/node.
-This section is where force diagrams, stress gradients, and lesson quantities
-accumulate — always as document data, never as UI chrome.
+body), `weight` (mass·g, down), `gravity` (unit). `label` floats a text sprite
+with live tokens: `{deg}` (attach's rotationZ), `{speed}`, `{height}` (above
+`gridY`), `{ke}` (½mv²), `{pe}` (mgh), `{value}` (a `ref` channel/node).
+
+Slice 2 adds solver-sourced overlays:
+
+```jsonc
+{ "type": "contacts", "attach": "toy", "scale": 0.03, "color": "#c98500", "max": 6 },
+{ "type": "trail",    "attach": "toy", "seconds": 3,  "color": "#9085e9" }
+```
+
+`contacts` draws a normal-force arrow at every solver contact on the object —
+the floor visibly pushes back, sized by the actual constraint impulse.
+`trail` traces the object's recent path (projectile arcs when the arm launches
+the toy). Queued next: torque arcs (needs part masses), stress coloring,
+computed expressions. This section is where force diagrams and lesson
+quantities accumulate — always as document data, never as UI chrome.
 
 ## Provenance of v0's shape
 
