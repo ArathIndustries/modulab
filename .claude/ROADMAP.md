@@ -13,6 +13,10 @@ Layering plan lives in AUTHORING.md (authoritative). Status 2026-07-27:
    decision), stress coloring, computed expressions, lesson presets as
    shareable scene documents
 
+6. Newcomer pass (8/27) — SHIPPED A–E: one product tab, named parts,
+   Match my rig in the HUD, orientation panel, About rewrite. Open: F =
+   CONTRIBUTING + code map + jargon scrub + .claude/CLAUDE.md fix.
+
 ## Cross-cutting, unscheduled
 
 - HARDWARE VALIDATION: BLE rig live 8/27; calibration verbs shipped (Zero

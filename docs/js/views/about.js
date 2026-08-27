@@ -45,10 +45,15 @@ export function renderAbout(container) {
             <h2>Match my rig</h2>
             <p>A fresh rig never turns quite right: the printed lever is press-fit onto
             the pot shaft at whatever angle it went on, and no two pots sweep the same
-            degrees. After connecting, each knob-driven part's control card walks you
-            through two clicks — <strong>Zero here</strong> (locks the part's resting
-            pose) then, optionally, <strong>Set swing</strong> (turn the part and lock
-            how far it sweeps). Saved with the scene draft and in Export.</p>
+            degrees. Once a board is connected a <strong>Match my rig</strong> button
+            appears under Connect and walks each knob-driven part in turn:</p>
+            <ul>
+                <li><strong>Zero</strong> — hold the real part at the pose shown · locks where it sits</li>
+                <li><strong>Set swing</strong> — turn it 90° · locks how far it sweeps (optional)</li>
+                <li><strong>Next</strong> — same for the next part · <strong>Done</strong></li>
+            </ul>
+            <p>Saved with the scene draft and in Export. The Edit drawer keeps the same
+            two steps on each part's control card for authoring.</p>
 
             <h2>Diagnostics</h2>
             <p><a href="#/dashboard">#/dashboard</a> — raw channel values, sample rate,

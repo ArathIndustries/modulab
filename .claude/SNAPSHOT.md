@@ -30,9 +30,17 @@ nav, reachable at #/dashboard as Diagnostics.
   Preset choice no longer persisted across loads; node-driven objects say
   so on their card. Rig result 8/27: both arms zeroed flat, tracking right.
   pol-original preset + its nodes REMOVED from the shipped scene (one
-  setup, so no preset radios in the HUD). NEXT: bake Arath's exported
-  calibration into pol-lever-arm.json; newcomer orientation of the GUI
-  (inventory in progress — nobody fresh can tell what the controls are).
+  setup, so no preset radios in the HUD).
+- **Newcomer pass A–E** (8/27): nav = Workspace · About (Twin deleted,
+  Dashboard off-nav at #/dashboard = Diagnostics); parts named upper-arm /
+  forearm / cube; **Match my rig** button in the HUD (top-left, after
+  connect) walks each knob-driven part: Zero → optional Set swing → Next
+  (`components/matchrig.js`, same calibrate.js math); first-visit
+  **orientation panel** naming the four HUD corners (`components/
+  orientation.js`, `?` in the nav, localStorage `modulab-oriented`);
+  About rewritten. UI copy rule: label → value descriptives, not sentences.
+  NEXT: bake Arath's exported calibration into pol-lever-arm.json;
+  CONTRIBUTING/code walk-through (row F, awaiting his yes).
 - **Overlays (lesson layer)**: vector, label (+{speed}{height}{ke}{pe}),
   contacts (solver impulses), trail, graph (pivot sparklines: deg/omega/
   speed/ref). pol-lever-arm carries θ₀+ω₀ (upper-arm), θ₁ (forearm), cube
