@@ -1,13 +1,13 @@
 /**
  * Workspace view — modulab's product surface. Full-bleed viewport + HUD,
  * scene from a scenes-as-data document, and the editing verbs
- * (AUTHORING.md layer 3): click-select, inspector, live document edits
- * with hot-reload, per-scene localStorage drafts, export/import.
+ * (EDIT-THE-SCENE.md layer 3): click-select, the Edit-scene drawer, live
+ * document edits with hot-reload, per-scene localStorage copies, export/import.
  *
- * Document lifecycle: original (scenes/<id>.json) -> draft (localStorage,
+ * Document lifecycle: original (scenes/<id>.json) -> your copy (localStorage,
  * created on first edit) -> export (file). The document is the single
- * source of truth; object edits rebuild the scene from it (geometry is
- * cached so rebuilds are instant), driver edits apply live by reference.
+ * source of truth; part edits rebuild the scene from it (geometry is
+ * cached so rebuilds are instant), link edits apply live by reference.
  */
 import * as THREE from '../../vendor/three.module.js';
 import { OrbitControls } from '../../vendor/OrbitControls.js';
@@ -48,15 +48,30 @@ export function renderSandbox(container) {
                     <span class="scene-name" id="scene-name"></span>
                     <span class="patch-toggle" id="patch-toggle" hidden></span>
                     <span id="giz-modes" hidden>
-                        <button class="btn btn-ghost btn-sm" data-m="translate" title="Drag arrows to move (W)">Move</button>
-                        <button class="btn btn-ghost btn-sm" data-m="rotate" title="Drag the ring to rotate (E)">Rotate</button>
+                        <span class="hud-ctl">
+                            <button class="btn btn-ghost btn-sm" data-m="translate" title="drag the arrows">Move</button>
+                            <small class="why">drag the arrows</small>
+                        </span>
+                        <span class="hud-ctl">
+                            <button class="btn btn-ghost btn-sm" data-m="rotate" title="drag the ring">Turn</button>
+                            <small class="why">drag the ring</small>
+                        </span>
                     </span>
-                    <button class="btn btn-ghost btn-sm" id="ws-reset" title="Put the physics objects back at their start">Reset</button>
-                    <button class="btn btn-ghost btn-sm" id="ws-restore" hidden title="Discard your edits and reload the original scene">Restore scene</button>
-                    <button class="btn btn-ghost btn-sm" id="ws-edit">Edit</button>
+                    <span class="hud-ctl">
+                        <button class="btn btn-ghost btn-sm" id="ws-reset" hidden>Reset</button>
+                        <small class="why" id="ws-reset-why" hidden></small>
+                    </span>
+                    <span class="hud-ctl">
+                        <button class="btn btn-ghost btn-sm" id="ws-restore" hidden title="back to the scene as shipped">Undo all my edits</button>
+                        <small class="why" id="ws-restore-why" hidden>back to the scene as shipped</small>
+                    </span>
+                    <span class="hud-ctl">
+                        <button class="btn btn-ghost btn-sm" id="ws-edit">Edit scene</button>
+                        <small class="why">change parts, links, and the world</small>
+                    </span>
                 </div>
                 <div class="hud hud-bl" id="ws-readout"></div>
-                <div class="hud hud-br">drag · orbit &nbsp; wheel · zoom &nbsp; right-drag · pan</div>
+                <div class="hud hud-br">camera — drag to orbit · wheel to zoom · right-drag to slide</div>
                 <div class="hud inspector" id="inspector" hidden></div>
             </div>
         </div>
@@ -69,11 +84,16 @@ export function renderSandbox(container) {
     const matchrigMount = container.querySelector('#matchrig-mount');
     const stageMsg = container.querySelector('.stage-msg');
     const readout = container.querySelector('#ws-readout');
+    const readoutHead = document.createElement('div');
+    readoutHead.className = 'readout-head';
+    readoutHead.innerHTML = '<b>readings</b><small class="why">raw knob values · part angles, live</small>';
+    readout.appendChild(readoutHead);
     const patchEl = container.querySelector('#patch-toggle');
     const sceneNameEl = container.querySelector('#scene-name');
     const inspectorEl = container.querySelector('#inspector');
     const editBtn = container.querySelector('#ws-edit');
     const resetBtn = container.querySelector('#ws-reset');
+    const resetWhyEl = container.querySelector('#ws-reset-why');
     const restoreBtn = container.querySelector('#ws-restore');
     const mode = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
     const urlParams = new URLSearchParams(window.location.search);
@@ -104,7 +124,8 @@ export function renderSandbox(container) {
     sun.shadow.bias = -0.0004;
     scene.add(sun);
 
-    // Viewport gizmo — viewport-first editing (workshop ruling 2026-07-27)
+    // Viewport gizmo — lets you drag a part directly in the 3D view instead
+    // of typing numbers into the position/angle fields.
     const modeBtns = container.querySelector('#giz-modes');
     const gizmo = new TransformControls(camera, canvas);
     gizmo.setSize(0.85);
@@ -152,8 +173,8 @@ export function renderSandbox(container) {
         if (chBadges.has(ch)) return;
         const el = document.createElement('span');
         el.className = 'twin-badge';
-        el.innerHTML = `<span class="series-chip" style="background:${SERIES_HEX[mode][ch % 8]}"></span>CH ${ch} <b>—</b>`;
-        readout.prepend(el);
+        el.innerHTML = `<span class="series-chip" style="background:${SERIES_HEX[mode][ch % 8]}"></span>knob ${ch} · <b>—</b>`;
+        readoutHead.after(el);
         chBadges.set(ch, el.querySelector('b'));
     }
 
@@ -176,10 +197,10 @@ export function renderSandbox(container) {
     let reloadTimer = null;
     let destroyed = false;
 
-    let baselineStr = null; // the shipped original this draft was edited from
+    let baselineStr = null; // the shipped original this copy was edited from
 
     // "Calibrate knobs": guided calibration front door, hidden until connected
-    // + the active patch has a knob-driven part (docs/js/components/matchrig.js).
+    // + the active patch has a knob-linked part (docs/js/components/matchrig.js).
     const matchrig = mountMatchRig(matchrigMount, {
         getDoc: () => doc,
         getCurrentPatch: () => inst?.currentPatch ?? doc?.defaultPatch ?? 'default',
@@ -192,6 +213,7 @@ export function renderSandbox(container) {
     function saveDraft() {
         isDraft = true;
         restoreBtn.hidden = false;
+        container.querySelector('#ws-restore-why').hidden = false;
         try {
             localStorage.setItem(draftKey, JSON.stringify({ __modulab: 1, baseline: baselineStr, doc }));
         } catch { /* storage full */ }
@@ -231,7 +253,7 @@ export function renderSandbox(container) {
     }
 
     /** Every edit funnels through here. rebuild=true for structural changes;
-     *  transform/driver-field edits apply live and skip the rebuild. */
+     *  transform/link-field edits apply live and skip the rebuild. */
     function commit({ rebuild = false } = {}) {
         const wasDraft = isDraft;
         saveDraft();
@@ -293,7 +315,7 @@ export function renderSandbox(container) {
                         baselineStr = rec.baseline;
                         isDraft = true;
                     } else {
-                        // legacy draft (no baseline recorded): keep the edits but
+                        // legacy copy (no baseline recorded): keep the edits but
                         // assume the shipped scene may have moved — say so
                         doc = rec;
                         baselineStr = null;
@@ -314,9 +336,9 @@ export function renderSandbox(container) {
         const note = document.createElement('div');
         note.className = 'hud update-note';
         note.innerHTML = `
-            <span>This scene has been updated — you're viewing your edited copy.</span>
-            <button class="btn btn-sm" data-a="load">Load update (discard my edits)</button>
-            <button class="btn btn-ghost btn-sm" data-a="keep">Keep mine</button>
+            <span>The shipped scene changed. You are looking at your copy.</span>
+            <button class="btn btn-sm" data-a="load">Use the new scene</button>
+            <button class="btn btn-ghost btn-sm" data-a="keep">Keep my copy</button>
         `;
         container.querySelector('.stage-full').appendChild(note);
         note.querySelector('[data-a="load"]').addEventListener('click', () => {
@@ -387,8 +409,25 @@ export function renderSandbox(container) {
         });
         if (destroyed) { inst.dispose(); return; }
 
-        sceneNameEl.textContent = (inst.meta.name ?? sceneId) + (isDraft ? ' *' : '');
+        sceneNameEl.textContent = (inst.meta.name ?? sceneId) + (isDraft ? ' · your copy' : '');
         restoreBtn.hidden = !isDraft;
+        container.querySelector('#ws-restore-why').hidden = !isDraft;
+
+        // Reset: only shown when the scene has a resettable part, named for it.
+        const resettableIds = (doc.objects ?? []).filter((o) => o.resettable).map((o) => o.id);
+        if (!resettableIds.length) {
+            resetBtn.hidden = true;
+            resetWhyEl.hidden = true;
+        } else {
+            resetBtn.hidden = false;
+            resetWhyEl.hidden = false;
+            const single = resettableIds.length === 1;
+            const label = single ? resettableIds[0] : 'parts';
+            resetBtn.textContent = `Reset the ${label}`;
+            const why = `put the ${label} back at ${single ? 'its' : 'their'} start`;
+            resetBtn.title = why;
+            resetWhyEl.textContent = why;
+        }
 
         if (firstBuild) {
             const cam = inst.env.camera ?? { position: [0, 4, 12], target: [0, 0, 0], fov: 60 };
@@ -440,13 +479,13 @@ export function renderSandbox(container) {
             patchEl.hidden = true;
         }
 
-        // Driver readout badges
+        // Link readout badges
         for (const b of driverBadges) b.closest('.twin-badge')?.remove();
         driverBadges = [];
         for (const d of inst.driverReadout()) {
             const el = document.createElement('span');
             el.className = 'twin-badge';
-            el.innerHTML = `${d.label} <b>—</b>`;
+            el.innerHTML = `${d.label} · <b>—</b>`;
             readout.appendChild(el);
             driverBadges.push(el.querySelector('b'));
         }

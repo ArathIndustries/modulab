@@ -1,15 +1,15 @@
 /**
- * Inspector v3 — IA workshop round 2 (ruling 2026-07-27):
+ * Edit-scene drawer:
  *
- *   EVERYTHING BELOW THE SCENE LIST IS SCOPED TO THE SELECTION.
- *   No selection -> just the scene list and a hint. Select an object ->
- *   its properties + "Control": only the motion links that drive THAT
- *   object, phrased as sentences ("Knob 0 turns this object"), with
- *   plain-word fields (starting angle / swing / response / flip).
+ *   EVERYTHING BELOW THE PARTS LIST IS SCOPED TO THE SELECTION.
+ *   No selection -> just the parts list and a hint. Select a part ->
+ *   its properties + "What moves it": only the links that move THAT
+ *   part, phrased as sentences ("knob 0 moves this part"), with
+ *   plain-word fields (starting angle / swing / follow / turn the other way).
  *
- *   The old global driver list is gone — that was the "two knobs that
- *   never go away". Patch save moved out to the HUD next to the patch
- *   radios (it's a scene-level action, not a selection action).
+ *   There is no global link list — only the links for the selected part
+ *   show here. Patch save lives in the HUD next to the patch radios
+ *   (it's a scene-level action, not a per-part action).
  *
  * ctx contract: getDoc, getSelected, setSelected, isDraft, exportDoc,
  * importDoc, revertDraft, getCurrentPatch, commit({rebuild}),
@@ -18,30 +18,67 @@
 
 import { zeroDriver, spanDriver } from '../scene/calibrate.js';
 
-// Tree rows describe ROLES in one plain word, with a dot color that matches
-// what the object looks like in the scene (glance ruling 2026-07-27).
-const ROLES = {
-    scenery: { word: 'scenery', tip: 'Solid and fixed in place — the world\'s furniture. Nothing moves it.' },
-    physics: { word: 'physics', tip: 'Falls and collides — gravity, the arm, and other objects can push it.' },
-    driven: { word: 'knob-driven', tip: 'Moved by an input — select it and see Control below.' },
-    anchor: { word: 'anchor', tip: 'Invisible attachment point — a mount or a pivot for other objects.' },
-    part: { word: 'part', tip: 'A part with nothing controlling it yet — connect a knob under Control.' },
-};
-
+// Tree rows describe each part's role, with a dot color that matches what
+// it looks like in the scene. The "moves with knob N" word is computed
+// per-part below, since it names the actual knob driving that part.
 function roleOf(o, doc) {
-    if (o.type === 'group') return ROLES.anchor;
-    if (o.body === 'dynamic') return ROLES.physics;
-    if (o.body === 'static') return ROLES.scenery;
-    const driven = Object.values(doc.patches ?? {}).some(
-        (list) => list.some((d) => d.target === o.id));
-    return driven ? ROLES.driven : ROLES.part;
+    if (o.type === 'group') {
+        return { word: 'pivot (invisible)', className: 'anchor',
+            tip: 'Invisible attachment point — a mount or a pivot for other parts.' };
+    }
+    if (o.body === 'dynamic') {
+        return { word: 'falls & collides', className: 'physics',
+            tip: 'Falls and collides — gravity, the arm, and other parts can push it.' };
+    }
+    if (o.body === 'static') {
+        return { word: 'fixed', className: 'scenery',
+            tip: 'Solid and fixed in place — the world\'s furniture. Nothing moves it.' };
+    }
+    let driverEntry = null;
+    for (const list of Object.values(doc.patches ?? {})) {
+        const d = list.find((dd) => dd.target === o.id);
+        if (d) { driverEntry = d; break; }
+    }
+    if (driverEntry) {
+        const word = driverEntry.input?.startsWith('ch:') ? `moves with knob ${driverEntry.input.slice(3)}`
+            : driverEntry.input?.startsWith('node:') ? `moves with mix ${driverEntry.input.slice(5)}`
+                : 'moves with an input';
+        return { word, className: 'knobdriven',
+            tip: 'Moved by a knob — select it and see What moves it below.' };
+    }
+    return { word: 'not linked yet', className: 'part',
+        tip: 'A part with nothing linked yet — link a knob under What moves it.' };
+}
+
+/** kind word for the selected-part summary line. */
+function kindOf(o) {
+    if (o.type === 'group') return 'pivot';
+    if (o.type === 'model') return 'lever';
+    if (o.body === 'dynamic') return 'block that falls';
+    if (o.body === 'static') return 'block that stays put';
+    return o.type ?? 'part';
+}
+
+/** One always-visible summary line under the selected part's name:
+ *  <kind> · moves with knob N | not linked yet · attached to <parent> | (the world) */
+function summaryLine(obj, mine) {
+    const kind = kindOf(obj);
+    let link = 'not linked yet';
+    if (mine.length) {
+        const d = mine[0];
+        if (d.input?.startsWith('ch:')) link = `moves with knob ${d.input.slice(3)}`;
+        else if (d.input?.startsWith('node:')) link = `moves with mix ${d.input.slice(5)}`;
+        else link = 'moves with an input';
+    }
+    const parent = obj.parent ? `attached to ${obj.parent}` : '(the world)';
+    return `${kind} · ${link} · ${parent}`;
 }
 
 const RESPONSE_PRESETS = [
     { value: 0, label: 'instant' },
-    { value: 0.5, label: 'snappy' },
+    { value: 0.5, label: 'quick' },
     { value: 0.2, label: 'smooth' },
-    { value: 0.06, label: 'floaty' },
+    { value: 0.06, label: 'lazy' },
 ];
 
 export function mountInspector(container, ctx) {
@@ -63,13 +100,25 @@ export function mountInspector(container, ctx) {
         return el;
     }
 
-    function fieldRow(label, tooltip, ...inputs) {
+    /** A property row: label (+ optional tooltip) on the left, a visible
+     *  "why" line under the label when the spec calls for one, inputs on
+     *  the right. */
+    function fieldRow(label, tooltip, why, ...inputs) {
         const row = document.createElement('label');
         row.className = 'insp-row';
-        const span = document.createElement('span');
-        span.textContent = label;
-        if (tooltip) span.title = tooltip;
-        row.appendChild(span);
+        const labelWrap = document.createElement('span');
+        labelWrap.className = 'insp-row-label';
+        const labelText = document.createElement('span');
+        labelText.textContent = label;
+        if (tooltip) labelText.title = tooltip;
+        labelWrap.appendChild(labelText);
+        if (why) {
+            const w = document.createElement('small');
+            w.className = 'why';
+            w.textContent = why;
+            labelWrap.appendChild(w);
+        }
+        row.appendChild(labelWrap);
         const holder = document.createElement('div');
         holder.className = 'insp-inputs';
         for (const i of inputs) holder.appendChild(i);
@@ -98,16 +147,29 @@ export function mountInspector(container, ctx) {
         return el;
     }
 
+    /** A section heading with a visible line under it. */
+    function sectionHead(text, why) {
+        const wrap = document.createElement('div');
+        wrap.className = 'insp-section-head';
+        wrap.appendChild(h4(text));
+        if (why) {
+            const w = document.createElement('small');
+            w.className = 'why';
+            w.textContent = why;
+            wrap.appendChild(w);
+        }
+        return wrap;
+    }
 
     // --- calibration: make the real part and the screen agree -----------------
     // Step 2 measures from the zero point step 1 took; that transient state
-    // is keyed by the driver object itself, so a doc swap (undo, import,
-    // restore) simply restarts the two steps. The math is pure and tested:
+    // is keyed by the link itself, so a doc swap (undo, import, revert)
+    // simply restarts the two steps. The math is pure and tested:
     // docs/js/scene/calibrate.js.
     const calState = new WeakMap();
     const liveEls = new Set();
-    const baselineEls = new Map(); // driver -> its 'starting angle' input (refreshed by followRest)
-    const inputHist = new WeakMap(); // driver -> last few polled readings (ADC noise averages out)
+    const baselineEls = new Map(); // link -> its 'starting angle' input (refreshed by followRest)
+    const inputHist = new WeakMap(); // link -> last few polled readings (ADC noise averages out)
     const SETTLE_POLLS = 5; // x 120 ms = the last ~0.6 s
     const liveTimer = setInterval(() => {
         for (const l of liveEls) {
@@ -127,10 +189,10 @@ export function mountInspector(container, ctx) {
         }
     }, 120);
 
-    /** A knob-driven object FOLLOWS an edit to its resting angle: while an
-     *  input is live the driver owns the part every frame, so without this
-     *  the edit is invisible until Zero here. Re-zero every driver on the
-     *  object so the input where it is now maps to the new rest; a pending
+    /** A knob-linked part FOLLOWS an edit to its resting angle: while an
+     *  input is live the link owns the part every frame, so without this
+     *  the edit is invisible until Zero here. Re-zero every link on the
+     *  part so the input where it is now maps to the new rest; a pending
      *  calibration moves its zero point along. */
     function followRest(obj) {
         const doc = ctx.getDoc();
@@ -186,29 +248,29 @@ export function mountInspector(container, ctx) {
     function calibrationRows(d, obj) {
         const wrap = document.createElement('div');
         wrap.className = 'ctl-cal';
-        const restNow = () => obj.rotationZ ?? 0; // read when clicked: angle ° may have been edited since render
+        const restNow = () => obj.rotationZ ?? 0; // read when clicked: resting angle may have been edited since render
         const rest = restNow();
         const st = calState.get(d);
 
         const cap = document.createElement('div');
         cap.className = 'ctl-cal-cap';
-        cap.textContent = 'Match the real part';
+        cap.textContent = 'Calibrate with the real part';
         cap.title = 'Measure starting angle and swing from the real knob instead of typing them. Zero first, then swing — swing keeps the zero.';
         wrap.appendChild(cap);
 
         const live = document.createElement('b');
         live.className = 'ctl-cal-live';
         live.textContent = '—';
-        wrap.appendChild(plainRow('input now', 'what the input driving this object reads right now', live));
+        wrap.appendChild(plainRow('input now', 'what the input driving this part reads right now', live));
         if (!d.input.startsWith('ch:')) {
             const p = document.createElement('p');
             p.className = 'hint ctl-cal-note';
-            p.textContent = 'This object follows a node that mixes several inputs, not one knob. A zero here only holds while the other inputs stay put. For a real knob, pick Knob N in the sentence above (or the independent preset in the HUD).';
+            p.textContent = 'This part follows a combined input, not one knob. A zero here only holds while the other inputs stay put. For a real knob, pick knob N in the sentence above (or the independent choice in the HUD).';
             wrap.appendChild(p);
         }
 
         const zeroBtn = button('Zero here',
-            `Hold the real part at its resting angle (${rest}°, the angle above), then click: starting angle is set so the screen matches.`);
+            `Hold the real part at its resting angle (${rest}°, the resting angle above), then click: starting angle is set so the screen matches.`);
         zeroBtn.addEventListener('click', () => {
             const k = settledInput(d);
             if (k == null) return;
@@ -226,7 +288,7 @@ export function mountInspector(container, ctx) {
             { value: -1, label: '↻ clockwise' },
         ], 1, () => {}, 'direction as you see it on screen');
         const swingBtn = button('Set swing',
-            'Turn the real part by the amount shown, then click: swing is measured from how far the input moved. Flip is no longer needed after this.');
+            'Turn the real part by the amount shown, then click: swing is measured from how far the input moved. Turning the other way is no longer needed after this.');
         swingBtn.disabled = !st;
         swingBtn.addEventListener('click', () => {
             const s = calState.get(d);
@@ -295,13 +357,13 @@ export function mountInspector(container, ctx) {
         ctx.commit({ rebuild: true });
     }
 
-    /** Rename an object and cascade to every reference in the document. */
+    /** Rename a part and cascade to every reference in the document. */
     function renameObject(oldId, newId) {
         const doc = ctx.getDoc();
         newId = newId.trim();
         if (!newId || newId === oldId) return false;
         if (doc.objects.some((o) => o.id === newId)) {
-            alert(`There is already an object named '${newId}'.`);
+            alert(`There is already a part named '${newId}'.`);
             return false;
         }
         for (const o of doc.objects) {
@@ -358,13 +420,16 @@ export function mountInspector(container, ctx) {
         const head = document.createElement('div');
         head.className = 'insp-head';
         head.innerHTML = `
-            <b>Inspector</b>
-            <span class="draft-chip" ${ctx.isDraft() ? '' : 'hidden'}>edited</span>
+            <div class="insp-head-title">
+                <b>Edit scene</b>
+                <small class="why">click a part in the scene or the list to change it</small>
+            </div>
+            <span class="draft-chip" ${ctx.isDraft() ? '' : 'hidden'}>your copy</span>
             <span class="insp-head-btns">
-                <button data-a="new" title="Start from the blank bench scene">New</button>
-                <button data-a="export" title="Download this scene as a JSON file">Save file</button>
-                <button data-a="import" title="Open a scene JSON file">Open</button>
-                <button data-a="revert" title="Throw away your edits, restore the original scene" ${ctx.isDraft() ? '' : 'hidden'}>Undo all</button>
+                <button data-a="new" title="Start from the blank bench scene">New empty scene</button>
+                <button data-a="export" title="download this scene as JSON">Save to file</button>
+                <button data-a="import" title="load a scene JSON">Open file</button>
+                <button data-a="revert" title="Throw away your edits, restore the original scene" ${ctx.isDraft() ? '' : 'hidden'}>Undo all my edits</button>
             </span>
             <input type="file" accept=".json,application/json" hidden>
         `;
@@ -391,8 +456,8 @@ export function mountInspector(container, ctx) {
         });
         container.appendChild(head);
 
-        // scene list ---------------------------------------------------------------
-        container.appendChild(h4('Scene'));
+        // parts list ---------------------------------------------------------------
+        container.appendChild(sectionHead('Parts', 'everything in the scene · click one to change it'));
         const tree = document.createElement('ul');
         tree.className = 'insp-tree';
         const byId = new Map((doc.objects ?? []).map((x) => [x.id, x]));
@@ -407,7 +472,7 @@ export function mountInspector(container, ctx) {
             li.style.paddingLeft = `${0.4 + depthOf(o) * 0.9}rem`;
             const role = roleOf(o, doc);
             li.title = role.tip;
-            li.innerHTML = `<b>${o.id}</b><span class="t-chip"><i class="role-dot ${role.word.replace('-', '')}"></i>${role.word}</span>`;
+            li.innerHTML = `<b>${o.id}</b><span class="t-chip"><i class="role-dot ${role.className}"></i>${role.word}</span>`;
             if (o.id === selected) li.className = 'selected';
             li.addEventListener('click', () => ctx.setSelected(o.id === selected ? null : o.id));
             tree.appendChild(li);
@@ -417,14 +482,14 @@ export function mountInspector(container, ctx) {
         const addRow = document.createElement('div');
         addRow.className = 'insp-addrow';
         const kinds = [
-            { value: 'box-dynamic', label: 'Box — falls & collides' },
-            { value: 'box-static', label: 'Box — fixed in place' },
-            { value: 'group', label: 'Anchor — invisible pivot point' },
+            { value: 'box-dynamic', label: 'block that falls' },
+            { value: 'box-static', label: 'block that stays put' },
+            { value: 'group', label: 'pivot (invisible)' },
         ];
-        if (Object.keys(doc.models ?? {}).length) kinds.push({ value: 'model', label: 'Part — lever model' });
+        if (Object.keys(doc.models ?? {}).length) kinds.push({ value: 'model', label: 'lever' });
         const kindSel = selectInput(kinds, 'box-dynamic', () => {});
         const addBtn = document.createElement('button');
-        addBtn.textContent = '+ Add';
+        addBtn.textContent = 'Add';
         addBtn.addEventListener('click', () => addObject(kindSel.value));
         addRow.appendChild(kindSel);
         addRow.appendChild(addBtn);
@@ -436,34 +501,46 @@ export function mountInspector(container, ctx) {
             const hint = document.createElement('p');
             hint.className = 'hint';
             hint.style.marginTop = '0.8rem';
-            hint.textContent = 'Select something — click it in the scene or in the list above — to see and change what it is and what moves it.';
+            hint.innerHTML = '<strong>Nothing selected.</strong> Click a part in the scene or in the list above.';
             container.appendChild(hint);
             container.scrollTop = scrollTop;
             return;
         }
 
-        // selected object properties -------------------------------------------------
+        // link lookup for this part, computed early for the summary line ------------
+        const patch = ctx.getCurrentPatch();
+        doc.patches ??= {};
+        doc.patches[patch] ??= [];
+        const allDrivers = doc.patches[patch];
+        const mine = allDrivers.filter((d) => d.target === obj.id);
+
+        // selected part properties -------------------------------------------------
         const fieldsTitle = h4(obj.id);
         fieldsTitle.className = 'insp-obj-title';
         const del = document.createElement('button');
         del.className = 'insp-del';
         del.textContent = 'Delete';
-        del.title = 'Remove this object and everything attached to it';
+        del.title = 'removes this part and anything attached to it';
         del.addEventListener('click', () => {
             if (confirm(`Delete '${obj.id}' and everything attached to it?`)) deleteObject(obj.id);
         });
         fieldsTitle.appendChild(del);
         container.appendChild(fieldsTitle);
 
+        const summary = document.createElement('div');
+        summary.className = 'obj-summary';
+        summary.textContent = summaryLine(obj, mine);
+        container.appendChild(summary);
+
         // name — any label you like; every reference follows the rename
         const nameEl = document.createElement('input');
         nameEl.type = 'text';
         nameEl.value = obj.id;
-        nameEl.title = 'Rename this object — attachments, controls, and overlays all follow';
+        nameEl.title = 'Rename this part — attachments, links, and overlays all follow';
         nameEl.addEventListener('change', () => {
             if (!renameObject(obj.id, nameEl.value)) nameEl.value = obj.id;
         });
-        container.appendChild(fieldRow('name', 'object id', nameEl));
+        container.appendChild(fieldRow('name', 'part id', null, nameEl));
 
         obj.position ??= [0, 0, 0];
         const live = () => ctx.liveTransform(obj.id);
@@ -472,66 +549,58 @@ export function mountInspector(container, ctx) {
             obj.position[i] = v;
             live();
         }));
-        container.appendChild(fieldRow('position', 'position [x, y, z] in scene units — or just drag the arrows in the scene', ...transformRefs.pos));
+        container.appendChild(fieldRow('position', 'x · y · z — or drag the arrows', 'x · y · z — or drag the arrows', ...transformRefs.pos));
         transformRefs.rot = numberInput(obj.rotationZ ?? 0, 1, (v) => {
             obj.rotationZ = v;
             followRest(obj);
             live();
-        }, 'rotationZ (degrees)');
-        container.appendChild(fieldRow('angle °', 'rotationZ — or drag the ring in Rotate mode', transformRefs.rot));
+        }, 'where it sits when nothing moves it — or drag the ring in Turn mode');
+        container.appendChild(fieldRow('resting angle', 'where it sits when nothing moves it — or drag the ring',
+            'where it sits when nothing moves it — or drag the ring', transformRefs.rot));
 
         const rebuild = () => ctx.commit({ rebuild: true });
         if (obj.size) {
-            container.appendChild(fieldRow('size', 'size [x, y, z]',
+            container.appendChild(fieldRow('size', 'width · height · depth', 'width · height · depth',
                 ...[0, 1, 2].map((i) => numberInput(obj.size[i] ?? 1, 0.1, (v) => {
                     obj.size[i] = v;
                     rebuild();
                 }))));
         }
         if (obj.body === 'dynamic') {
-            container.appendChild(fieldRow('mass', 'mass — heavier is harder to push around', numberInput(obj.mass ?? 1, 0.1, (v) => {
-                obj.mass = v;
-                rebuild();
-            })));
+            container.appendChild(fieldRow('weight', 'heavier is harder to push', 'heavier is harder to push',
+                numberInput(obj.mass ?? 1, 0.1, (v) => {
+                    obj.mass = v;
+                    rebuild();
+                })));
         }
         const idx = doc.objects.indexOf(obj);
         const parentOpts = [{ value: '', label: '(the world)' },
             ...doc.objects.slice(0, idx).map((o) => ({ value: o.id, label: o.id }))];
-        container.appendChild(fieldRow('attached to', 'parent — when that object moves or turns, this one rides along', selectInput(parentOpts, obj.parent ?? '', (v) => {
-            if (v) obj.parent = v; else delete obj.parent;
-            rebuild();
-        })));
+        container.appendChild(fieldRow('attached to', 'moves along with this part', 'moves along with this part',
+            selectInput(parentOpts, obj.parent ?? '', (v) => {
+                if (v) obj.parent = v; else delete obj.parent;
+                rebuild();
+            })));
         if (doc.materials && obj.type !== 'group') {
             const matOpts = Object.keys(doc.materials).map((m) => ({ value: m, label: m }));
-            container.appendChild(fieldRow('appearance', 'material', selectInput(matOpts, obj.material, (v) => {
+            container.appendChild(fieldRow('color', 'material', null, selectInput(matOpts, obj.material, (v) => {
                 obj.material = v;
                 rebuild();
             })));
         }
 
-        // control: only what drives THIS object ----------------------------------------
-        const patch = ctx.getCurrentPatch();
-        doc.patches ??= {};
-        doc.patches[patch] ??= [];
-        const allDrivers = doc.patches[patch];
-        const mine = allDrivers.filter((d) => d.target === obj.id);
-
-        container.appendChild(h4('Control', 'Motion links: how inputs turn this object'));
+        // what moves it: only links that drive THIS part ----------------------------------------
+        container.appendChild(sectionHead('What moves it', 'links from knobs to this part'));
 
         const inputOpts = [];
-        for (let i = 0; i < 8; i++) inputOpts.push({ value: `ch:${i}`, label: `Knob ${i}` });
-        for (const n of doc.nodes ?? []) inputOpts.push({ value: `node:${n.id}`, label: `Node ${n.id}` });
+        for (let i = 0; i < 8; i++) inputOpts.push({ value: `ch:${i}`, label: `knob ${i}` });
+        for (const n of doc.nodes ?? []) inputOpts.push({ value: `node:${n.id}`, label: `mix ${n.id}` });
 
         if (!mine.length) {
             const none = document.createElement('p');
             none.className = 'hint';
-            none.textContent = 'Nothing controls this object.';
+            none.textContent = 'Nothing moves this part yet.';
             container.appendChild(none);
-        } else {
-            const legend = document.createElement('p');
-            legend.className = 'ctl-legend';
-            legend.textContent = 'Angles in degrees. Swing = how far a full knob turn moves it.';
-            container.appendChild(legend);
         }
 
         for (const d of mine) {
@@ -544,15 +613,15 @@ export function mountInspector(container, ctx) {
                 d.input = v;
                 ctx.commit({});
                 render();
-            }, 'which input drives this object');
+            }, 'which input moves this part');
             sentence.appendChild(inputSel);
             const verb = document.createElement('span');
-            verb.textContent = 'turns this object';
+            verb.textContent = 'moves this part';
             sentence.appendChild(verb);
             const disc = document.createElement('button');
             disc.className = 'insp-del';
-            disc.textContent = 'Disconnect';
-            disc.title = 'This input stops controlling the object';
+            disc.textContent = 'Unlink';
+            disc.title = 'This knob stops moving this part';
             disc.addEventListener('click', () => {
                 allDrivers.splice(allDrivers.indexOf(d), 1);
                 ctx.commit({ rebuild: true });
@@ -563,15 +632,17 @@ export function mountInspector(container, ctx) {
             const liveD = () => ctx.commit({});
             const baseEl = numberInput(d.baseline ?? 0, 1, (v) => { d.baseline = v; liveD(); });
             baselineEls.set(d, baseEl);
-            card.appendChild(fieldRow('starting angle °', 'baseline — where it sits when the knob is at zero', baseEl));
-            card.appendChild(fieldRow('swing °', 'amplitude — negative swings the other way',
+            card.appendChild(fieldRow('starting angle', 'where it points when the knob reads 0',
+                'where it points when the knob reads 0', baseEl));
+            card.appendChild(fieldRow('swing', 'degrees for one full knob turn · negative = the other way',
+                'degrees for one full knob turn · negative = the other way',
                 numberInput(d.amplitude ?? 0, 1, (v) => { d.amplitude = v; liveD(); })));
 
             const lerpVal = d.lerp ?? 0;
             const preset = RESPONSE_PRESETS.find((p) => Math.abs(p.value - lerpVal) < 0.011);
             const respOpts = [...RESPONSE_PRESETS];
             if (!preset) respOpts.push({ value: lerpVal, label: `custom (${lerpVal})` });
-            card.appendChild(fieldRow('response', 'lerp — how quickly it chases the knob',
+            card.appendChild(fieldRow('follow', 'how fast it follows the knob', 'how fast it follows the knob',
                 selectInput(respOpts, preset?.value ?? lerpVal, (v) => {
                     d.lerp = Number.parseFloat(v);
                     liveD();
@@ -580,9 +651,9 @@ export function mountInspector(container, ctx) {
             const inv = document.createElement('input');
             inv.type = 'checkbox';
             inv.checked = Boolean(d.invert);
-            inv.title = 'invert — knob one way, object the other';
+            inv.title = 'turn the knob one way, the part the other';
             inv.addEventListener('change', () => { d.invert = inv.checked; liveD(); });
-            card.appendChild(fieldRow('flip direction', 'invert', inv));
+            card.appendChild(fieldRow('turn the other way', null, null, inv));
 
             card.appendChild(calibrationRows(d, obj));
             container.appendChild(card);
@@ -590,7 +661,7 @@ export function mountInspector(container, ctx) {
 
         const addD = document.createElement('button');
         addD.className = 'insp-add-driver';
-        addD.textContent = '+ Connect a knob to this object';
+        addD.textContent = '+ Link a knob';
         addD.addEventListener('click', () => {
             allDrivers.push({
                 target: obj.id,

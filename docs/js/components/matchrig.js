@@ -4,8 +4,8 @@
  * knob-driven parts of the CURRENT patch one at a time: hold the real part
  * at the pose shown, Zero, optionally turn it and Set swing, Next.
  *
- * Same two-step protocol as the Edit drawer's per-card "Match the real
- * part" (docs/js/components/inspector.js calibrationRows) — same pure math
+ * Same two-step protocol as the Edit drawer's per-card "Calibrate with the
+ * real part" (docs/js/components/inspector.js calibrationRows) — same pure math
  * (docs/js/scene/calibrate.js) — this is just a guided path through it that
  * does not require selecting anything or opening the drawer.
  *

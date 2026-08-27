@@ -1,6 +1,8 @@
 /**
- * Top navigation bar with theme toggle.
- * Seed-B "mutate-container" render convention preserved.
+ * Top navigation bar with theme toggle. Re-renders the whole bar into its
+ * container on every change (route switch, theme toggle) instead of
+ * patching individual elements — simplest thing that stays correct for a
+ * bar this small.
  */
 import { toggleTheme, getTheme } from '../theme.js';
 import { CONFIG } from '../config.js';
@@ -15,7 +17,6 @@ const NAV_ITEMS = [
 ];
 
 export function renderNav(container, activeRoute) {
-    const themeLabel = getTheme() === 'dark' ? 'Light mode' : 'Dark mode';
     const themeIcon = getTheme() === 'dark' ? '☀' : '☾';
 
     container.innerHTML = `
@@ -28,9 +29,9 @@ export function renderNav(container, activeRoute) {
                 `).join('')}
             </ul>
             <div class="nav-actions">
-                <a class="btn-icon" href="${CONFIG.REPO_URL}" title="GitHub" target="_blank" rel="noopener">↗</a>
-                ${activeRoute === 'sandbox' ? '<button class="btn-icon" id="orient-help" title="How the screen is laid out">?</button>' : ''}
-                <button class="btn-icon" id="theme-toggle" title="${themeLabel}">${themeIcon}</button>
+                <a class="btn-icon" href="${CONFIG.REPO_URL}" title="source on GitHub" target="_blank" rel="noopener">↗</a>
+                ${activeRoute === 'sandbox' ? '<button class="btn-icon" id="orient-help" title="how the screen is laid out">?</button>' : ''}
+                <button class="btn-icon" id="theme-toggle" title="dark / light">${themeIcon}</button>
             </div>
         </nav>
     `;

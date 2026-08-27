@@ -1,6 +1,6 @@
 /**
- * App bootstrap: routes, nav, theme. Seed-B bootstrap sequence preserved
- * (DOM refs -> setView -> route registration -> initTheme -> router.start).
+ * App bootstrap: routes, nav, theme. Fixed startup order: grab the DOM
+ * refs, register routes, init the theme, then start the router.
  */
 import { router } from './router.js';
 import { initTheme } from './theme.js';

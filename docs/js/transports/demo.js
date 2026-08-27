@@ -6,7 +6,7 @@
  */
 export function connectDemo({ onData, onStatus }) {
     let t = 0;
-    onStatus?.({ state: 'connected', label: 'demo signal' });
+    onStatus?.({ state: 'connected', label: 'Fake signal' });
     onData('<h:demo2:2>');
 
     const id = setInterval(() => {

@@ -37,14 +37,14 @@ export function connectManual({ onData, onStatus }) {
     function render() {
         panel.innerHTML = `
             <div class="manual-head">
-                <span>manual input</span>
-                <button class="manual-add" title="add channel" ${values.length >= MAX_CHANNELS ? 'disabled' : ''}>+ ch</button>
+                <span>on-screen sliders</span>
+                <button class="manual-add" title="add a knob" ${values.length >= MAX_CHANNELS ? 'disabled' : ''}>+ knob</button>
                 <button class="manual-close" title="disconnect">×</button>
             </div>
             ${values.map((v, i) => `
                 <label class="manual-row">
                     <span class="series-chip" style="background: var(${SERIES[i % 8]})"></span>
-                    <span class="manual-ch">CH ${i}</span>
+                    <span class="manual-ch">knob ${i}</span>
                     <input type="range" min="0" max="1023" step="1" value="${v}"
                            data-ch="${i}" style="accent-color: var(${SERIES[i % 8]})">
                     <b data-val="${i}">${v.toFixed(0)}</b>
@@ -80,7 +80,7 @@ export function connectManual({ onData, onStatus }) {
     hello();
     emit();
     render();
-    onStatus?.({ state: 'connected', label: 'manual sliders' });
+    onStatus?.({ state: 'connected', label: 'On-screen sliders' });
 
     return {
         disconnect: () => {
