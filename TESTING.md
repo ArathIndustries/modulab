@@ -83,9 +83,11 @@ with the board streaming:
 1. **Edit** (top right) → click the arm segment in the scene → under
    **Control** its knob card ends with *Match the real part*; **input now**
    moves with your pot.
-2. Hold the real segment in the pose the screen shows at rest (the
-   **angle °** field — 60° for the shoulder) and click **Zero here**. The
-   screen now sits where the real part sits.
+2. Type the pose your real segment is in into **angle °** (0 = flat,
+   pointing at the ramp; + = counter-clockwise; the elbow's angle is
+   relative to the upper arm, so 90 = forearm straight up from it). The
+   screen follows as you type. Click **Zero here** to lock that pose to
+   where the pot is now.
 3. Turn the real segment a quarter turn counter-clockwise *as you see it on
    screen* (or change the number/direction to what you actually did) and
    click **Set swing**. The screen now turns exactly as far as the real part.

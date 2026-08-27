@@ -15,3 +15,6 @@
   `invert` (flip stays as a manual knob for un-calibrated drivers)
 - Direction convention for "turned °": counter-clockwise on screen is +
   (scene +Z, viewed from the default camera)
+- While an input is live, editing a driven object's angle ° re-zeros its
+  drivers so the part follows the edit (rest is the zero reference, so an
+  edit to it that the knob overrides is a trap, not a feature)

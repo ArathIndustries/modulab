@@ -23,7 +23,9 @@ Dashboard/Twin tabs are legacy, capabilities folded in or superseded.
   points: amplitude = turned° / Δk, sign folded in, invert dropped, zero
   kept). Pure math `docs/js/scene/calibrate.js` + `tests/calibrate.test.mjs`
   (node --test); engine exposes `inputValue(ref)`. Ordinary driver edits →
-  draft/export, firmware untouched.
+  draft/export, firmware untouched. A knob-driven object FOLLOWS an edit
+  to its angle ° while an input is live (auto re-zero, `followRest`) —
+  fix for the 8/27 rig session where the elbow zeroed against a stale rest.
 - **Overlays (lesson layer)**: vector, label (+{speed}{height}{ke}{pe}),
   contacts (solver impulses), trail, graph (pivot sparklines: deg/omega/
   speed/ref). pol-lever-arm carries θ₀+ω₀ (shoulder), θ₁ (elbow), toy

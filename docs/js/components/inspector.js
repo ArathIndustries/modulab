@@ -106,6 +106,7 @@ export function mountInspector(container, ctx) {
     // docs/js/scene/calibrate.js.
     const calState = new WeakMap();
     const liveEls = new Set();
+    const baselineEls = new Map(); // driver -> its 'starting angle' input (refreshed by followRest)
     const liveTimer = setInterval(() => {
         for (const l of liveEls) {
             const v = ctx.inputValue?.(l.ref) ?? null;
@@ -115,6 +116,26 @@ export function mountInspector(container, ctx) {
             l.swingBtn.disabled = v == null || !calState.has(l.d);
         }
     }, 120);
+
+    /** A knob-driven object FOLLOWS an edit to its resting angle: while an
+     *  input is live the driver owns the part every frame, so without this
+     *  the edit is invisible until Zero here. Re-zero every driver on the
+     *  object so the input where it is now maps to the new rest; a pending
+     *  calibration moves its zero point along. */
+    function followRest(obj) {
+        const doc = ctx.getDoc();
+        const rest = obj.rotationZ ?? 0;
+        for (const d of doc.patches?.[ctx.getCurrentPatch()] ?? []) {
+            if (d.target !== obj.id) continue;
+            const k = ctx.inputValue?.(d.input) ?? null;
+            if (k == null) continue;
+            zeroDriver(d, k, rest);
+            const s = calState.get(d);
+            if (s) { s.k0 = k; s.rest = rest; }
+            const el = baselineEls.get(d);
+            if (el && document.activeElement !== el) el.value = d.baseline;
+        }
+    }
 
     function fmtInput(ref, v) {
         return ref.startsWith('ch:') ? `${(v * 1023).toFixed(0)} raw` : v.toFixed(3);
@@ -146,7 +167,8 @@ export function mountInspector(container, ctx) {
     function calibrationRows(d, obj) {
         const wrap = document.createElement('div');
         wrap.className = 'ctl-cal';
-        const rest = obj.rotationZ ?? 0;
+        const restNow = () => obj.rotationZ ?? 0; // read when clicked: angle ° may have been edited since render
+        const rest = restNow();
         const st = calState.get(d);
 
         const cap = document.createElement('div');
@@ -165,8 +187,8 @@ export function mountInspector(container, ctx) {
         zeroBtn.addEventListener('click', () => {
             const k = ctx.inputValue(d.input);
             if (k == null) return;
-            zeroDriver(d, k, rest);
-            calState.set(d, { k0: k, rest, note: `Zeroed at ${fmtInput(d.input, k)}. Now turn the real part and set the swing.` });
+            zeroDriver(d, k, restNow());
+            calState.set(d, { k0: k, rest: restNow(), note: `Zeroed at ${fmtInput(d.input, k)}. Now turn the real part and set the swing.` });
             ctx.commit({});
             render();
         });
@@ -296,6 +318,7 @@ export function mountInspector(container, ctx) {
 
     function render() {
         liveEls.clear();
+        baselineEls.clear();
         if (destroyed) return;
         const doc = ctx.getDoc();
         if (!doc) { container.innerHTML = '<p class="hint">No scene loaded.</p>'; return; }
@@ -427,6 +450,7 @@ export function mountInspector(container, ctx) {
         container.appendChild(fieldRow('position', 'position [x, y, z] in scene units — or just drag the arrows in the scene', ...transformRefs.pos));
         transformRefs.rot = numberInput(obj.rotationZ ?? 0, 1, (v) => {
             obj.rotationZ = v;
+            followRest(obj);
             live();
         }, 'rotationZ (degrees)');
         container.appendChild(fieldRow('angle °', 'rotationZ — or drag the ring in Rotate mode', transformRefs.rot));
@@ -512,8 +536,9 @@ export function mountInspector(container, ctx) {
             card.appendChild(sentence);
 
             const liveD = () => ctx.commit({});
-            card.appendChild(fieldRow('starting angle °', 'baseline — where it sits when the knob is at zero',
-                numberInput(d.baseline ?? 0, 1, (v) => { d.baseline = v; liveD(); })));
+            const baseEl = numberInput(d.baseline ?? 0, 1, (v) => { d.baseline = v; liveD(); });
+            baselineEls.set(d, baseEl);
+            card.appendChild(fieldRow('starting angle °', 'baseline — where it sits when the knob is at zero', baseEl));
             card.appendChild(fieldRow('swing °', 'amplitude — negative swings the other way',
                 numberInput(d.amplitude ?? 0, 1, (v) => { d.amplitude = v; liveD(); })));
 
