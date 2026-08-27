@@ -101,7 +101,7 @@ Zero first, then swing: swing keeps the zero. The result is saved with the
 scene draft (and in **Export**); **Restore scene** throws it away. The Edit
 drawer's per-card *Match the real part* calibration still works the same
 way — it's what scene authors use to calibrate a part that isn't visited by
-Match my rig (a node-mixed driver, for example).
+Calibrate knobs (a node-mixed driver, for example).
 
 ## Next steps once it works
 

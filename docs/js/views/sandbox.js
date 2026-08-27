@@ -178,7 +178,7 @@ export function renderSandbox(container) {
 
     let baselineStr = null; // the shipped original this draft was edited from
 
-    // "Match my rig": guided calibration front door, hidden until connected
+    // "Calibrate knobs": guided calibration front door, hidden until connected
     // + the active patch has a knob-driven part (docs/js/components/matchrig.js).
     const matchrig = mountMatchRig(matchrigMount, {
         getDoc: () => doc,

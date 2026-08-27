@@ -42,10 +42,10 @@ export function renderAbout(container) {
                     (see <a href="${DOCS}/PROTOCOL.md" target="_blank" rel="noopener">PROTOCOL.md</a>).</li>
             </ul>
 
-            <h2>Match my rig</h2>
+            <h2>Calibrate knobs</h2>
             <p>A fresh rig never turns quite right: the printed lever is press-fit onto
             the pot shaft at whatever angle it went on, and no two pots sweep the same
-            degrees. Once a board is connected a <strong>Match my rig</strong> button
+            degrees. Once a board is connected a <strong>Calibrate knobs</strong> button
             appears under Connect and walks each knob-driven part in turn:</p>
             <ul>
                 <li><strong>Zero</strong> — hold the real part at the pose shown · locks where it sits</li>

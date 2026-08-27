@@ -709,7 +709,7 @@
 .ctl-cal-deg { width: 3.4rem; }
 .ctl-cal-note { margin: 0.25rem 0 0; }
 
-/* Match my rig */
+/* Calibrate knobs (matchrig.js) */
 .hud-tl { flex-direction: column; align-items: flex-start; }
 #matchrig-mount { position: relative; }
 #matchrig-mount[hidden] { display: none; }
@@ -878,3 +878,12 @@
     .orient-grid { grid-template-columns: 1fr; row-gap: 0.15rem; }
     .orient-place { margin-top: 0.5rem; }
 }
+
+/* Calibrate knobs — explanations */
+.matchrig-panel { width: 360px; }
+.matchrig-intro { margin: 0.1rem 0 0.45rem; font-size: 0.8rem; color: var(--text-secondary); }
+.matchrig-row > span:first-child { min-width: 6.4rem; }
+.matchrig-explain { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.35; }
+.matchrig-explain b { color: var(--text-primary); }
+.matchrig-optional { color: var(--text-muted); }
+.matchrig-done[hidden] { display: none; }

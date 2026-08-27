@@ -33,7 +33,7 @@ nav, reachable at #/dashboard as Diagnostics.
   setup, so no preset radios in the HUD).
 - **Newcomer pass A–E** (8/27): nav = Workspace · About (Twin deleted,
   Dashboard off-nav at #/dashboard = Diagnostics); parts named upper-arm /
-  forearm / cube; **Match my rig** button in the HUD (top-left, after
+  forearm / cube; **Calibrate knobs** button in the HUD (top-left, after
   connect) walks each knob-driven part: Zero → optional Set swing → Next
   (`components/matchrig.js`, same calibrate.js math); first-visit
   **orientation panel** naming the four HUD corners (`components/

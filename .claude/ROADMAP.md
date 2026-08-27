@@ -14,7 +14,7 @@ Layering plan lives in AUTHORING.md (authoritative). Status 2026-07-27:
    shareable scene documents
 
 6. Newcomer pass (8/27) — SHIPPED A–E: one product tab, named parts,
-   Match my rig in the HUD, orientation panel, About rewrite. Open: F =
+   Calibrate knobs in the HUD, orientation panel, About rewrite. Open: F =
    CONTRIBUTING + code map + jargon scrub + .claude/CLAUDE.md fix.
 
 ## Cross-cutting, unscheduled

@@ -28,7 +28,7 @@
   a twin's parts move only when the physical part moves (Arath). Node
   graphs stay in the schema/engine for scenes that want them.
 - UI copy is label → value descriptives, never sentences (Arath, on the
-  first Match-my-rig / orientation drafts). Calibration has a front door in
-  the HUD (Match my rig) — the Edit drawer is for authoring, not for using
+  first Calibrate-knobs / orientation drafts). Calibration has a front door in
+  the HUD (Calibrate knobs) — the Edit drawer is for authoring, not for using
 - Twin view deleted; Dashboard demoted to #/dashboard (Diagnostics); nav is
   Workspace · About. Scene ids name the part (upper-arm, forearm, cube)

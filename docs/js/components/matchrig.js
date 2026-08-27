@@ -1,5 +1,5 @@
 /**
- * Match my rig — a guided front door onto driver calibration, so a visitor
+ * Calibrate knobs — a guided front door onto driver calibration, so a visitor
  * with a real knob rig never has to open the Edit drawer. Walks the
  * knob-driven parts of the CURRENT patch one at a time: hold the real part
  * at the pose shown, Zero, optionally turn it and Set swing, Next.
@@ -43,7 +43,7 @@ export function mountMatchRig(hudContainer, ctx) {
     let live = null; // { targetId, ref, readingEl, zeroBtn, swingBtn } for the open step
 
     hudContainer.innerHTML = `
-        <button class="btn btn-ghost btn-sm matchrig-btn">Match my rig</button>
+        <button class="btn btn-ghost btn-sm matchrig-btn" title="Line up the on-screen parts with the real ones">Calibrate knobs</button>
         <div class="matchrig-panel" hidden></div>
     `;
     const btn = hudContainer.querySelector('.matchrig-btn');
@@ -68,6 +68,7 @@ export function mountMatchRig(hudContainer, ctx) {
 
     function closePanel() {
         panelOpen = false;
+        if (liveTimer) { clearInterval(liveTimer); liveTimer = null; }
         panel.hidden = true;
         panel.innerHTML = '';
         live = null;
@@ -80,6 +81,7 @@ export function mountMatchRig(hudContainer, ctx) {
         panelOpen = true;
         panel.hidden = false;
         renderStep();
+        if (!liveTimer) liveTimer = setInterval(pollLive, 120);
     }
 
     btn.addEventListener('click', () => {
@@ -100,42 +102,53 @@ export function mountMatchRig(hudContainer, ctx) {
             && (doc.patches?.[patch] ?? []).some((dd) => dd.target === obj.parent);
 
         const hint = poseHint(rest);
-        const poseText = `real ${d.target} at ${fmtDeg(rest)}°`
-            + (hint ? ` · ${hint}` : '')
-            + (parentDriven ? ` · relative to ${obj.parent}` : '');
+        const knob = d.input.startsWith('ch:') ? `knob ${d.input.slice(3)}` : d.input;
+        const poseText = `${fmtDeg(rest)}°`
+            + (hint ? ` (${hint})` : '')
+            + (parentDriven ? `, measured from the ${obj.parent}` : '');
 
         const isLast = stepIndex === steps.length - 1;
 
         panel.innerHTML = `
             <div class="matchrig-head">
-                <b>Match my rig</b>
+                <b>Calibrate knobs</b>
                 <span class="matchrig-progress">${d.target} · ${stepIndex + 1} of ${steps.length}</span>
-                <button class="matchrig-close" title="Close, keep what's calibrated">×</button>
+                <button class="matchrig-close" title="Close and keep what is calibrated">×</button>
             </div>
-            <div class="matchrig-row"><span>pose</span><div class="matchrig-val matchrig-pose">${poseText}</div></div>
-            <div class="matchrig-row"><span>reading</span><div class="matchrig-val matchrig-reading">—</div></div>
+            <p class="matchrig-intro">The on-screen <b>${d.target}</b> follows <b>${knob}</b>. Two steps line it up with the real one.</p>
+            <div class="matchrig-row">
+                <span>step 1 · zero</span>
+                <div class="matchrig-explain">Hold the real ${d.target} at <b>${poseText}</b>, then click Zero.
+                    The on-screen part will sit where the real one is.</div>
+            </div>
+            <div class="matchrig-row"><span>${knob} reads</span><div class="matchrig-val matchrig-reading">—</div></div>
             <div class="matchrig-row matchrig-actions"><span></span><div><button class="ctl-cal-btn matchrig-zero">Zero</button></div></div>
             <div class="matchrig-row">
-                <span>turn</span>
+                <span>step 2 · swing</span>
+                <div class="matchrig-explain">Turn the real ${d.target} by the amount below, then click Set swing.
+                    The on-screen part will then turn exactly as far as the real one.
+                    <span class="matchrig-optional">Optional — skip if it already tracks.</span></div>
+            </div>
+            <div class="matchrig-row">
+                <span>turned</span>
                 <div>
-                    <input type="number" class="matchrig-deg" step="1" value="90">
-                    <select class="matchrig-dir">
+                    <input type="number" class="matchrig-deg" step="1" value="90"> °
+                    <select class="matchrig-dir" title="direction as you see it on screen">
                         <option value="1" selected>↺ counter-clockwise</option>
                         <option value="-1">↻ clockwise</option>
                     </select>
-                    <span class="matchrig-optional">optional</span>
                 </div>
             </div>
             <div class="matchrig-row matchrig-actions"><span></span><div><button class="ctl-cal-btn matchrig-swing">Set swing</button></div></div>
-            <div class="matchrig-row"><span>status</span><div class="matchrig-val matchrig-status">—</div></div>
+            <div class="matchrig-row"><span>result</span><div class="matchrig-val matchrig-status">not zeroed yet</div></div>
             <div class="matchrig-row matchrig-actions matchrig-nav">
                 <span></span>
                 <div>
                     <span class="matchrig-nav-left">
-                        <button class="ctl-cal-btn matchrig-skip">Skip</button>
-                        <button class="ctl-cal-btn matchrig-next">${isLast ? 'Done' : 'Next →'}</button>
+                        <button class="ctl-cal-btn matchrig-skip">Skip this part</button>
+                        <button class="ctl-cal-btn matchrig-next">${isLast ? 'Finish' : 'Next part →'}</button>
                     </span>
-                    <button class="ctl-cal-btn matchrig-done">Done</button>
+                    <button class="ctl-cal-btn matchrig-done" ${isLast ? 'hidden' : ''}>Finish</button>
                 </div>
             </div>
         `;
@@ -152,7 +165,7 @@ export function mountMatchRig(hudContainer, ctx) {
         const closeBtn = panel.querySelector('.matchrig-close');
 
         const st = calState.get(d.target);
-        statusEl.textContent = st?.note ?? '—';
+        statusEl.textContent = st?.note ?? 'not zeroed yet';
 
         function setStatus(text) {
             const s = calState.get(d.target) ?? {};
@@ -176,7 +189,7 @@ export function mountMatchRig(hudContainer, ctx) {
             const r = restNow();
             zeroDriver(d, k, r);
             calState.set(d.target, { ...(calState.get(d.target) ?? {}), k0: k, rest: r });
-            setStatus(`zeroed · ${fmtRaw(k)}`);
+            setStatus(`zeroed at ${fmtRaw(k)}`);
             paintReading();
             ctx.commit({});
         });
@@ -186,13 +199,13 @@ export function mountMatchRig(hudContainer, ctx) {
             const k1 = settledInput(d.target, d.input);
             if (!s || k1 == null) return;
             const turned = (Number.parseFloat(degInput.value) || 0) * Number(dirSelect.value);
-            if (!turned) { setStatus('enter degrees turned'); return; }
+            if (!turned) { setStatus('enter how many degrees you turned it'); return; }
             if (!spanDriver(d, s.k0, k1, turned, s.rest)) {
-                setStatus('turn it further · then Set swing');
+                setStatus('the knob barely moved · turn the real part further, then Set swing');
                 return;
             }
             const amp = d.amplitude;
-            setStatus(`swing · ${Math.abs(amp).toFixed(0)}° per full turn${amp < 0 ? ' · reversed' : ''}`);
+            setStatus(`swing set · one full knob turn = ${Math.abs(amp).toFixed(0)}°${amp < 0 ? ' · turns the other way' : ''}`);
             ctx.commit({});
         });
 
@@ -209,7 +222,9 @@ export function mountMatchRig(hudContainer, ctx) {
         live = { targetId: d.target, ref: d.input, readingEl, zeroBtn, swingBtn };
     }
 
-    const liveTimer = setInterval(() => {
+    // Live reading poll runs only while the panel is open.
+    let liveTimer = null;
+    function pollLive() {
         if (destroyed || !panelOpen || !live) return;
         const v = ctx.inputValue?.(live.ref) ?? null;
         if (v != null) {
@@ -224,7 +239,7 @@ export function mountMatchRig(hudContainer, ctx) {
         live.readingEl.classList.toggle('is-off', v == null);
         live.zeroBtn.disabled = v == null;
         live.swingBtn.disabled = v == null || !calState.has(live.targetId);
-    }, 120);
+    }
 
     return {
         /** Recompute button visibility (connected + at least one ch:-driven
@@ -239,7 +254,7 @@ export function mountMatchRig(hudContainer, ctx) {
         },
         destroy() {
             destroyed = true;
-            clearInterval(liveTimer);
+            if (liveTimer) clearInterval(liveTimer);
             hudContainer.innerHTML = '';
         },
     };

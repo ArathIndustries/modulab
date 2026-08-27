@@ -12,7 +12,7 @@ const ROWS = [
     ['top right', 'Scene', 'Reset · Edit — changes the scene, not needed to use it'],
     ['bottom left', 'Readings', 'knob values (raw) · part angles (°), live'],
     ['bottom right', 'Camera', 'drag orbit · wheel zoom · right-drag pan'],
-    ['with a board', 'Match my rig', 'appears after connecting · two clicks per part'],
+    ['with a board', 'Calibrate knobs', 'appears after connecting · lines up on-screen parts with the real ones'],
 ];
 
 let openPanel = null; // { backdrop, close } while mounted, else null
