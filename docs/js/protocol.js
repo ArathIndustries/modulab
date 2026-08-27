@@ -1,5 +1,5 @@
 /**
- * modulab wire protocol parser — clean-room implementation of PROTOCOL.md.
+ * modulab wire protocol parser — clean-room implementation of BUILD-A-MODULE.md.
  *
  * v0 frames (PowderOfLife-compatible): <ch:val>  e.g. <0:512.0000>
  * v1 additions:                        <h:name:count>  module hello

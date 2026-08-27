@@ -235,6 +235,7 @@ export function mountInspector(container, ctx) {
         const row = document.createElement('div');
         row.className = 'insp-row';
         const span = document.createElement('span');
+        span.className = 'insp-row-label';
         span.textContent = label;
         if (tooltip) span.title = tooltip;
         row.appendChild(span);

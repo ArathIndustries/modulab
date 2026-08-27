@@ -1,5 +1,5 @@
 /**
- * Scene engine — instantiates a scenes-as-data document (AUTHORING.md,
+ * Scene engine — instantiates a scenes-as-data document (EDIT-THE-SCENE.md,
  * schema v0) into Three.js + cannon-es and runs it.
  *
  * The contract that makes authoring possible: NOTHING in here knows about

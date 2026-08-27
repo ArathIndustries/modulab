@@ -9,7 +9,7 @@ import { CONFIG } from '../config.js';
 import { showOrientation } from './orientation.js';
 
 // One product view. The raw instrument panel stays reachable at #/dashboard
-// (linked from About and TESTING.md as Diagnostics) but is not a tab; the
+// (linked from About and CONNECT.md as Diagnostics) but is not a tab; the
 // July Twin view was retired — the workspace superseded it.
 const NAV_ITEMS = [
     { label: 'Workspace', route: 'sandbox' },
