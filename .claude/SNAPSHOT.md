@@ -9,7 +9,7 @@ The Workspace (route `sandbox`) IS the product: full-bleed engine viewport +
 HUD. Nav = Workspace · About. Twin view deleted 8/27; Dashboard is off the
 nav, reachable at #/dashboard as Diagnostics.
 
-- **Scenes-as-data**: `docs/scenes/*.json` (schema v0, AUTHORING.md); engine
+- **Scenes-as-data**: `docs/scenes/*.json` (schema v0, EDIT-THE-SCENE.md); engine
   `docs/js/scene/engine.js` instantiates objects/bodies/models/nodes/drivers/
   patches/overlays; warn-never-die.
 - **Editor** (authoring layers 3+4 shipped): raycast select + gizmos
@@ -46,11 +46,11 @@ nav, reachable at #/dashboard as Diagnostics.
   speed/ref). pol-lever-arm carries θ₀+ω₀ (upper-arm), θ₁ (forearm), cube
   weight/velocity/contacts/trail/energy.
 - **Transports**: USB serial (DTR asserted), BLE, demo, manual sliders —
-  one shared stream, protocol v0 (PoL-compatible) + v1 hello (PROTOCOL.md).
+  one shared stream, protocol v0 (PoL-compatible) + v1 hello (BUILD-A-MODULE.md).
 - **Firmware**: `firmware/modulab_ble/` dual-transport (USB+BLE, 50 Hz),
   compile-verified; CHANNEL_PINS self-documents adding IO pins (6-ch BLE cap).
-- **Docs**: README = intent router; TESTING.md paths 0/A/B; PROTOCOL.md
-  module-building walkthrough; AUTHORING.md schema + layering plan.
+- **Docs**: README = intent router; CONNECT.md paths 0/A/B; BUILD-A-MODULE.md
+  module-building walkthrough; EDIT-THE-SCENE.md schema + layering plan.
 
 ## NOT yet true
 

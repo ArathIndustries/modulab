@@ -1,5 +1,7 @@
 # Project Template
 
+This `.claude/` folder is the project's running memory (SNAPSHOT = where we are, ROADMAP = what's next, DECISIONS = why, VISION, INDEX) — humans are welcome to read it, and an assistant should read SNAPSHOT.md first (see `.claude/CLAUDE.md`).
+
 This folder is a copy-paste skeleton for bootstrapping a new project into the Claude memory system. See `OneDrive/Claude Memory/CONVENTIONS.md` §13 for the bootstrapping procedure.
 
 ## How to use
