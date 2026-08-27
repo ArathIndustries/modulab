@@ -32,7 +32,7 @@ void loop() {
    pipeline.
 3. Close the Arduino Serial Monitor (only one program can hold the port).
 4. Open the app in desktop Chrome/Edge → **Connect USB** → pick your board's
-   port. The arm's shoulder follows A0, the elbow follows A1.
+   port. The arm's shoulder follows A0, the forearm follows A1.
 
 Existing **Powder Of Life** sketches work unchanged (same wire protocol).
 
@@ -69,8 +69,9 @@ The modulab firmware streams over USB serial and Bluetooth at the same time.
   numbers, and the arm tracks your knobs with ~no lag.
 - Drag to orbit the scene, wheel to zoom. The blue cube is physics — knock it
   around with the arm ("Reset" puts it back).
-- The **Dashboard** tab is the diagnostic view: raw values, sample rate, and a
-  protocol console showing the exact frames your board is sending.
+- Diagnostics live at `#/dashboard` (append it to the URL): raw values,
+  sample rate, and a protocol console showing the exact frames your board
+  is sending.
 
 ## Calibrate: make the screen turn like the real lever
 
@@ -84,14 +85,14 @@ with the board streaming:
    **Control** its knob card ends with *Match the real part*; **input now**
    moves with your pot.
 2. Type the pose your real segment is in into **angle °** (0 = flat,
-   pointing at the ramp; + = counter-clockwise; the elbow's angle is
+   pointing at the ramp; + = counter-clockwise; the forearm's angle is
    relative to the upper arm, so 90 = forearm straight up from it). The
    screen follows as you type. Click **Zero here** to lock that pose to
    where the pot is now.
 3. Turn the real segment a quarter turn counter-clockwise *as you see it on
    screen* (or change the number/direction to what you actually did) and
    click **Set swing**. The screen now turns exactly as far as the real part.
-4. Repeat for the elbow — its resting angle is relative to the upper arm, so
+4. Repeat for the forearm — its resting angle is relative to the upper arm, so
    hold it at rest *relative to the segment it rides on*.
 
 Hold still for a second before each click — both buttons average the last

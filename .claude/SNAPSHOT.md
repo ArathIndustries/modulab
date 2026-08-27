@@ -5,8 +5,9 @@ Updated: 2026-08-27 (work-laptop session; calibration)
 ## Where we are
 
 LIVE at https://arathindustries.github.io/modulab/ (GitHub Pages, main/docs).
-The Sandbox IS the product (ruling 7/27): full-bleed engine viewport + HUD;
-Dashboard/Twin tabs are legacy, capabilities folded in or superseded.
+The Workspace (route `sandbox`) IS the product: full-bleed engine viewport +
+HUD. Nav = Workspace · About. Twin view deleted 8/27; Dashboard is off the
+nav, reachable at #/dashboard as Diagnostics.
 
 - **Scenes-as-data**: `docs/scenes/*.json` (schema v0, AUTHORING.md); engine
   `docs/js/scene/engine.js` instantiates objects/bodies/models/nodes/drivers/
@@ -34,7 +35,7 @@ Dashboard/Twin tabs are legacy, capabilities folded in or superseded.
   (inventory in progress — nobody fresh can tell what the controls are).
 - **Overlays (lesson layer)**: vector, label (+{speed}{height}{ke}{pe}),
   contacts (solver impulses), trail, graph (pivot sparklines: deg/omega/
-  speed/ref). pol-lever-arm carries θ₀+ω₀ (shoulder), θ₁ (elbow), toy
+  speed/ref). pol-lever-arm carries θ₀+ω₀ (upper-arm), θ₁ (forearm), cube
   weight/velocity/contacts/trail/energy.
 - **Transports**: USB serial (DTR asserted), BLE, demo, manual sliders —
   one shared stream, protocol v0 (PoL-compatible) + v1 hello (PROTOCOL.md).

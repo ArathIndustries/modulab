@@ -37,7 +37,7 @@
       "roughness": 0.45,
       "metalness": 0.05
     },
-    "toy": {
+    "cube": {
       "color": "#3987e5",
       "roughness": 0.4
     }
@@ -85,7 +85,7 @@
       "body": "static"
     },
     {
-      "id": "toy",
+      "id": "cube",
       "type": "box",
       "size": [
         2.9346223,
@@ -97,7 +97,7 @@
         7.09,
         0
       ],
-      "material": "toy",
+      "material": "cube",
       "body": "dynamic",
       "mass": 1,
       "plane2d": true,
@@ -114,7 +114,7 @@
       "rotationZ": 180
     },
     {
-      "id": "seg0",
+      "id": "upper-arm",
       "type": "model",
       "model": "lever60",
       "material": "arm",
@@ -140,11 +140,11 @@
       }
     },
     {
-      "id": "seg1",
+      "id": "forearm",
       "type": "model",
       "model": "lever60",
       "material": "arm",
-      "parent": "seg0",
+      "parent": "upper-arm",
       "position": [
         -6,
         0,
@@ -169,34 +169,34 @@
   "overlays": [
     {
       "type": "vector",
-      "attach": "toy",
+      "attach": "cube",
       "quantity": "weight",
       "scale": 0.28,
       "color": "#e66767"
     },
     {
       "type": "vector",
-      "attach": "toy",
+      "attach": "cube",
       "quantity": "velocity",
       "scale": 0.35,
       "color": "#199e70"
     },
     {
       "type": "contacts",
-      "attach": "toy",
+      "attach": "cube",
       "scale": 0.03,
       "color": "#c98500",
       "max": 6
     },
     {
       "type": "trail",
-      "attach": "toy",
+      "attach": "cube",
       "seconds": 3,
       "color": "#9085e9"
     },
     {
       "type": "label",
-      "attach": "toy",
+      "attach": "cube",
       "text": "v {speed} \u00b7 KE {ke}",
       "offset": [
         0,
@@ -206,7 +206,7 @@
     },
     {
       "type": "graph",
-      "attach": "seg0",
+      "attach": "upper-arm",
       "quantity": "deg",
       "label": "\u03b8\u2080",
       "seconds": 6,
@@ -219,7 +219,7 @@
     },
     {
       "type": "graph",
-      "attach": "seg1",
+      "attach": "forearm",
       "quantity": "deg",
       "label": "\u03b8\u2081",
       "seconds": 6,
@@ -232,7 +232,7 @@
     },
     {
       "type": "graph",
-      "attach": "seg0",
+      "attach": "upper-arm",
       "quantity": "omega",
       "label": "\u03c9\u2080",
       "seconds": 6,
@@ -247,7 +247,7 @@
   "patches": {
     "independent": [
       {
-        "target": "seg0",
+        "target": "upper-arm",
         "property": "rotationZ",
         "input": "ch:0",
         "baseline": 60,
@@ -256,7 +256,7 @@
         "lerp": 0.2
       },
       {
-        "target": "seg1",
+        "target": "forearm",
         "property": "rotationZ",
         "input": "ch:1",
         "baseline": -30,

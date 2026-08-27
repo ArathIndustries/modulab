@@ -16,14 +16,14 @@ Prerequisites: a clone of this repo, any text editor, and a local server
 2. **Load it:** open `http://localhost:8321/?manual=1&scene=my-scene#/sandbox`.
    ✓ *Verify:* the HUD's scene name (top right) shows your scene; sliders
    move the arm.
-3. **Change one number:** set the ramp's `rotationZ` to `30`, or the toy's
+3. **Change one number:** set the ramp's `rotationZ` to `30`, or the cube's
    `size` bigger, or a driver's `amplitude` to `120`. Refresh.
    ✓ *Verify:* the world changed accordingly — that's authoring.
 4. **Break something on purpose:** misspell a field or point a driver at a
    nonexistent object. Refresh with the browser console open.
    ✓ *Verify:* the scene still loads and the console explains what it
    ignored (`[scene:my-scene] …`) — documents warn, never die.
-5. **Make it yours:** add a second toy box, re-wire `patches` so channel 1
+5. **Make it yours:** add a second cube, re-wire `patches` so channel 1
    drives the shoulder, or add a `mix` node and drive a segment from both
    knobs. The full schema is below; every field the reference scene uses is
    documented.
@@ -67,7 +67,7 @@ are just `ch:N` refs — [PROTOCOL.md → Build your own module](PROTOCOL.md#bui
   "materials": {                    // referenced by objects; PBR params
     "world": { "color": "#3a4150", "roughness": 0.85 },
     "arm":   { "color": "#eb6834", "roughness": 0.45, "metalness": 0.05 },
-    "toy":   { "color": "#3987e5", "roughness": 0.4 }
+    "cube":  { "color": "#3987e5", "roughness": 0.4 }
   },
 
   "models": {                       // mesh assets; scale maps native units -> scene units
@@ -78,13 +78,13 @@ are just `ch:N` refs — [PROTOCOL.md → Build your own module](PROTOCOL.md#bui
     { "id": "floor", "type": "box", "size": [25.15, 1, 4],
       "position": [-6.6, -3.91, 0], "material": "world", "body": "static" },
 
-    { "id": "toy", "type": "box", "size": [2.9346, 2.9346, 2.9346],
-      "position": [13.86, 7.09, 0], "material": "toy",
+    { "id": "cube", "type": "box", "size": [2.9346, 2.9346, 2.9346],
+      "position": [13.86, 7.09, 0], "material": "cube",
       "body": "dynamic", "mass": 1, "plane2d": true, "resettable": true },
 
     { "id": "root", "type": "group", "position": [-8, 0, 0], "rotationZ": 180 },
 
-    { "id": "seg0", "type": "model", "model": "lever60", "material": "arm",
+    { "id": "upper-arm", "type": "model", "model": "lever60", "material": "arm",
       "parent": "root", "position": [0, 0, 0], "rotationZ": 60,
       "body": "kinematic", "collider": { "size": [6, 0.7, 3], "offset": [-3, 0, 0] } }
   ],
@@ -98,9 +98,9 @@ are just `ch:N` refs — [PROTOCOL.md → Build your own module](PROTOCOL.md#bui
 
   "patches": {                      // named driver sets; UI toggles between them
     "independent": [
-      { "target": "seg0", "property": "rotationZ", "input": "ch:0",
+      { "target": "upper-arm", "property": "rotationZ", "input": "ch:0",
         "baseline": 60, "amplitude": 250, "invert": true, "lerp": 0.2 },
-      { "target": "seg1", "property": "rotationZ", "input": "ch:1",
+      { "target": "forearm", "property": "rotationZ", "input": "ch:1",
         "baseline": -30, "amplitude": -250, "lerp": 0.2 }
     ],
     // more named sets here show a preset selector in the HUD (per visit, not remembered)
@@ -148,9 +148,9 @@ In-scene analysis, declared by the document and rendered inside the world:
 
 ```jsonc
 "overlays": [
-  { "type": "vector", "attach": "toy", "quantity": "weight",   "scale": 0.28, "color": "#e66767" },
-  { "type": "vector", "attach": "toy", "quantity": "velocity", "scale": 0.35, "color": "#199e70" },
-  { "type": "label",  "attach": "seg0", "text": "θ₀ {deg}°", "offset": [0, 1.4, 0] }
+  { "type": "vector", "attach": "cube", "quantity": "weight",   "scale": 0.28, "color": "#e66767" },
+  { "type": "vector", "attach": "cube", "quantity": "velocity", "scale": 0.35, "color": "#199e70" },
+  { "type": "label",  "attach": "upper-arm", "text": "θ₀ {deg}°", "offset": [0, 1.4, 0] }
 ]
 ```
 
@@ -162,17 +162,17 @@ with live tokens: `{deg}` (attach's rotationZ), `{speed}`, `{height}` (above
 Slice 2 adds solver-sourced overlays:
 
 ```jsonc
-{ "type": "contacts", "attach": "toy", "scale": 0.03, "color": "#c98500", "max": 6 },
-{ "type": "trail",    "attach": "toy", "seconds": 3,  "color": "#9085e9" }
+{ "type": "contacts", "attach": "cube", "scale": 0.03, "color": "#c98500", "max": 6 },
+{ "type": "trail",    "attach": "cube", "seconds": 3,  "color": "#9085e9" }
 ```
 
 `contacts` draws a normal-force arrow at every solver contact on the object —
 the floor visibly pushes back, sized by the actual constraint impulse.
 `trail` traces the object's recent path (projectile arcs when the arm launches
-the toy).
+the cube).
 
 ```jsonc
-{ "type": "graph", "attach": "seg0", "quantity": "deg", "label": "θ₀",
+{ "type": "graph", "attach": "upper-arm", "quantity": "deg", "label": "θ₀",
   "seconds": 6, "color": "#3987e5", "offset": [0, 2.1, 0] }
 ```
 
@@ -187,7 +187,7 @@ quantities accumulate — always as document data, never as UI chrome.
 
 Everything here is the generalization of what the decoded Unity scene actually
 required: parented transforms with baseline rotations (the arm), static/dynamic
-bodies with 2D constraint (floor/ramp/toy), kinematic colliders on driven parts,
+bodies with 2D constraint (floor/ramp/cube), kinematic colliders on driven parts,
 MixNode chains with per-input amplitudes, TransformDriver baseline+amplitude+
 invert semantics, and a constant generator. Nothing speculative was added.
 

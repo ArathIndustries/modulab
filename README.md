@@ -46,8 +46,8 @@ py -m http.server 8321    # then open http://localhost:8321
 ```
 
 Useful URL parameters: `?demo=1` (synthetic module), `?manual=1&ch0=350&ch1=650`
-(sliders with preset values), `?scene=<id>` (load `docs/scenes/<id>.json`),
-`&patch=lerp@ch:0` (Twin view node presets).
+(sliders with preset values), `?scene=<id>` (load `docs/scenes/<id>.json`).
+Diagnostics (raw values, sample rate, protocol console): `#/dashboard`.
 
 Repo layout (folder = deployment concern):
 
@@ -72,6 +72,6 @@ it to the Nano 33 BLE
 ([fork](https://github.com/ArathIndustries/PowderOfLife)). modulab is a
 clean-room implementation — no PowderOfLife code, wire-compatible with its
 serial frames; the sandbox scene is a decoded transcription of his Unity
-digital-twin demo, and the Twin view renders his printable lever model with
+digital-twin demo, and the workspace renders his printable lever model with
 attribution ([docs/models/README.md](docs/models/README.md)). Code is
 [MIT](LICENSE); the lever model keeps its upstream license.
