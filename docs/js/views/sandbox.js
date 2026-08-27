@@ -16,6 +16,7 @@ import { RoomEnvironment } from '../../vendor/RoomEnvironment.js';
 import { stream } from '../stream.js';
 import { mountConnectBar } from '../components/connectbar.js';
 import { mountInspector } from '../components/inspector.js';
+import { mountMatchRig } from '../components/matchrig.js';
 import { instantiateScene } from '../scene/engine.js';
 
 const PATCH_TIPS = {
@@ -38,7 +39,10 @@ export function renderSandbox(container) {
             <div class="stage-full">
                 <canvas class="twin-canvas"></canvas>
                 <div class="stage-msg" hidden></div>
-                <div class="hud hud-tl" id="connect-mount"></div>
+                <div class="hud hud-tl">
+                    <div id="connect-mount"></div>
+                    <div id="matchrig-mount" hidden></div>
+                </div>
                 <div class="hud hud-tr">
                     <span class="scene-name" id="scene-name"></span>
                     <span class="patch-toggle" id="patch-toggle" hidden></span>
@@ -59,6 +63,7 @@ export function renderSandbox(container) {
 
     const unmountBar = mountConnectBar(container.querySelector('#connect-mount'));
     const canvas = container.querySelector('.twin-canvas');
+    const matchrigMount = container.querySelector('#matchrig-mount');
     const stageMsg = container.querySelector('.stage-msg');
     const readout = container.querySelector('#ws-readout');
     const patchEl = container.querySelector('#patch-toggle');
@@ -169,6 +174,17 @@ export function renderSandbox(container) {
     let destroyed = false;
 
     let baselineStr = null; // the shipped original this draft was edited from
+
+    // "Match my rig": guided calibration front door, hidden until connected
+    // + the active patch has a knob-driven part (docs/js/components/matchrig.js).
+    const matchrig = mountMatchRig(matchrigMount, {
+        getDoc: () => doc,
+        getCurrentPatch: () => inst?.currentPatch ?? doc?.defaultPatch ?? 'default',
+        inputValue: (ref) => inst?.inputValue(ref) ?? null,
+        commit: (opts) => { commit(opts); inspector?.render(); },
+        isConnected: () => stream.connected,
+    });
+    const offStatus = stream.onStatus(() => matchrig.refresh());
 
     function saveDraft() {
         isDraft = true;
@@ -433,6 +449,7 @@ export function renderSandbox(container) {
         }
 
         if (keepSelection && inst.objects.has(keepSelection)) setSelected(keepSelection);
+        matchrig.refresh();
     }
 
     // --- Editor toggle -----------------------------------------------------------
@@ -560,7 +577,9 @@ export function renderSandbox(container) {
             window.removeEventListener('keydown', onKey);
             if (raf) cancelAnimationFrame(raf);
             offSample();
+            offStatus();
             unmountBar();
+            matchrig.destroy();
             ro.disconnect();
             gizmo.detach();
             gizmo.dispose?.();

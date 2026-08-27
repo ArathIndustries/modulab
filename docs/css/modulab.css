@@ -708,3 +708,92 @@
 .ctl-cal .insp-inputs { flex-wrap: wrap; align-items: center; gap: 0.3rem; }
 .ctl-cal-deg { width: 3.4rem; }
 .ctl-cal-note { margin: 0.25rem 0 0; }
+
+/* Match my rig */
+.hud-tl { flex-direction: column; align-items: flex-start; }
+#matchrig-mount { position: relative; }
+#matchrig-mount[hidden] { display: none; }
+.matchrig-panel {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    z-index: 8;
+    width: 300px;
+    max-width: calc(100vw - 2rem);
+    background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    box-shadow: var(--shadow-lg);
+    padding: 0.6rem 0.7rem;
+    font-size: 0.82rem;
+}
+.matchrig-panel[hidden] { display: none; }
+.matchrig-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+}
+.matchrig-head b { color: var(--text-primary); font-size: 0.88rem; flex: 1; }
+.matchrig-progress {
+    font-family: ui-monospace, monospace;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+.matchrig-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0.1rem 0.2rem;
+}
+.matchrig-close:hover { color: var(--status-serious); }
+.matchrig-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.15rem 0;
+}
+.matchrig-row > span:first-child {
+    width: 3.6rem;
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-family: ui-monospace, monospace;
+}
+.matchrig-row > div {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+.matchrig-val { color: var(--text-primary); font-size: 0.8rem; }
+.matchrig-reading { font-family: ui-monospace, monospace; }
+.matchrig-reading.is-off { color: var(--text-muted); }
+.matchrig-deg {
+    width: 3.4rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    padding: 0.15rem 0.3rem;
+    font-size: 0.8rem;
+}
+.matchrig-dir {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    padding: 0.15rem 0.3rem;
+    font-size: 0.78rem;
+    font-family: ui-monospace, monospace;
+}
+.matchrig-optional { font-size: 0.7rem; color: var(--text-muted); }
+.matchrig-nav > div { justify-content: space-between; }
+.matchrig-nav-left { display: flex; gap: 0.4rem; }

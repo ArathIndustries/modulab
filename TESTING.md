@@ -81,24 +81,27 @@ printed lever is press-fit onto the pot shaft at whatever angle it went on,
 and no two pots sweep the same degrees. Fix it once per rig, in the app,
 with the board streaming:
 
-1. **Edit** (top right) → click the arm segment in the scene → under
-   **Control** its knob card ends with *Match the real part*; **input now**
-   moves with your pot.
-2. Type the pose your real segment is in into **angle °** (0 = flat,
-   pointing at the ramp; + = counter-clockwise; the forearm's angle is
-   relative to the upper arm, so 90 = forearm straight up from it). The
-   screen follows as you type. Click **Zero here** to lock that pose to
-   where the pot is now.
-3. Turn the real segment a quarter turn counter-clockwise *as you see it on
+1. **Connect** the board (USB or Bluetooth, above), then click **Match my
+   rig** (top left, under the connect bar). It walks the arm's knob-driven
+   segments one at a time — **upper-arm · 1 of 2**, etc.
+2. Hold the real segment at the pose shown next to **pose** (0° = flat,
+   pointing at the ramp; the forearm's pose is relative to the upper arm,
+   so 90° = forearm straight up from it) and click **Zero**.
+3. Optionally turn the real segment 90° counter-clockwise *as you see it on
    screen* (or change the number/direction to what you actually did) and
    click **Set swing**. The screen now turns exactly as far as the real part.
-4. Repeat for the forearm — its resting angle is relative to the upper arm, so
-   hold it at rest *relative to the segment it rides on*.
+4. Click **Next →** and repeat for the forearm — its resting pose is
+   relative to the upper arm, so hold it at rest *relative to the segment
+   it rides on*. **Done** on the last segment (or the × in the panel)
+   finishes and keeps whatever you calibrated.
 
 Hold still for a second before each click — both buttons average the last
 half-second of readings so pot noise cannot become the zero.
 Zero first, then swing: swing keeps the zero. The result is saved with the
-scene draft (and in **Export**); **Restore scene** throws it away.
+scene draft (and in **Export**); **Restore scene** throws it away. The Edit
+drawer's per-card *Match the real part* calibration still works the same
+way — it's what scene authors use to calibrate a part that isn't visited by
+Match my rig (a node-mixed driver, for example).
 
 ## Next steps once it works
 
