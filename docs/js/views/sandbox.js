@@ -18,6 +18,11 @@ import { mountConnectBar } from '../components/connectbar.js';
 import { mountInspector } from '../components/inspector.js';
 import { instantiateScene } from '../scene/engine.js';
 
+const PATCH_TIPS = {
+    'independent': "each knob turns its own joint (the default)",
+    'pol-original': "PowderOfLife demo: the elbow mixes BOTH knobs — for the talk, not for calibrating a rig",
+};
+
 const SERIES_HEX = {
     dark: ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767'],
     light: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'],
@@ -155,6 +160,7 @@ export function renderSandbox(container) {
     let doc = null;
     let isDraft = false;
     let inst = null;
+    let chosenPatch = null; // motion preset picked this visit (see patch selector)
     let inspector = null;
     let selectedId = null;
     let selectionHelper = null;
@@ -388,19 +394,20 @@ export function renderSandbox(container) {
 
         // Patch selector (rebuilt each time; patches may have been edited)
         if (inst.patchNames.length > 1) {
-            const key = `modulab-patch-${inst.meta.id}`;
-            const saved = localStorage.getItem(key);
-            if (saved && inst.patchNames.includes(saved)) inst.setPatch(saved);
+            // The choice survives rebuilds (edits) but NOT page loads: a fresh
+            // visit always starts on the scene's default preset. Persisting it
+            // silently left one rig on the demo's cross-coupled preset for a month.
+            if (chosenPatch && inst.patchNames.includes(chosenPatch)) inst.setPatch(chosenPatch);
             patchEl.hidden = false;
             patchEl.innerHTML = inst.patchNames.map((p) => `
-                <label><input type="radio" name="ws-patch" value="${p}"
+                <label title="${PATCH_TIPS[p] ?? 'a saved motion setup'}"><input type="radio" name="ws-patch" value="${p}"
                     ${p === inst.currentPatch ? 'checked' : ''}> ${p}</label>
             `).join('')
                 + '<button class="patch-save" title="Save the current motion setup under a new name">＋</button>';
             for (const radio of patchEl.querySelectorAll('input')) {
                 radio.addEventListener('change', () => {
                     inst.setPatch(radio.value);
-                    localStorage.setItem(key, radio.value);
+                    chosenPatch = radio.value;
                     inspector?.render();
                 });
             }

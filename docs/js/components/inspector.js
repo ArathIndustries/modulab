@@ -200,6 +200,12 @@ export function mountInspector(container, ctx) {
         live.className = 'ctl-cal-live';
         live.textContent = '—';
         wrap.appendChild(plainRow('input now', 'what the input driving this object reads right now', live));
+        if (!d.input.startsWith('ch:')) {
+            const p = document.createElement('p');
+            p.className = 'hint ctl-cal-note';
+            p.textContent = 'This object follows a node that mixes several inputs, not one knob. A zero here only holds while the other inputs stay put. For a real knob, pick Knob N in the sentence above (or the independent preset in the HUD).';
+            wrap.appendChild(p);
+        }
 
         const zeroBtn = button('Zero here',
             `Hold the real part at its resting angle (${rest}°, the angle above), then click: starting angle is set so the screen matches.`);

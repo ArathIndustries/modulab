@@ -80,6 +80,9 @@ printed lever is press-fit onto the pot shaft at whatever angle it went on,
 and no two pots sweep the same degrees. Fix it once per rig, in the app,
 with the board streaming:
 
+0. Check the motion preset radios in the HUD read **independent** (the
+   default). *pol-original* is the talk demo where the elbow mixes both
+   knobs — it cannot be calibrated against a real rig.
 1. **Edit** (top right) → click the arm segment in the scene → under
    **Control** its knob card ends with *Match the real part*; **input now**
    moves with your pot.

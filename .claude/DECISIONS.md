@@ -18,3 +18,6 @@
 - While an input is live, editing a driven object's angle ° re-zeros its
   drivers so the part follows the edit (rest is the zero reference, so an
   edit to it that the knob overrides is a trap, not a feature)
+- Motion-preset choice is per visit, not persisted: a fresh load always
+  starts on the scene default (independent). The remembered pol-original
+  preset silently broke elbow calibration on the first rig
