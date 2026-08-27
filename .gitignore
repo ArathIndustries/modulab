@@ -13,3 +13,4 @@ desktop.ini
 
 # arduino build artifacts
 firmware/**/build/
+*.stackdump
