@@ -675,3 +675,36 @@
     padding: 0.1em 0.35em;
     font-size: 0.9em;
 }
+
+/* Calibration — measure starting angle + swing from the real knob */
+.ctl-cal {
+    margin-top: 0.4rem;
+    padding-top: 0.35rem;
+    border-top: 1px dashed var(--border-light);
+}
+.ctl-cal-cap {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 0.2rem;
+}
+.ctl-cal-live {
+    font-family: ui-monospace, monospace;
+    font-size: 0.78rem;
+    color: var(--text-primary);
+}
+.ctl-cal-live.is-off { color: var(--text-muted); font-weight: normal; }
+.ctl-cal-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.72rem;
+    padding: 0.15rem 0.5rem;
+    white-space: nowrap;
+}
+.ctl-cal-btn:hover:not(:disabled) { color: var(--text-primary); background: var(--bg-hover); }
+.ctl-cal-btn:disabled { opacity: 0.45; cursor: default; }
+.ctl-cal .insp-inputs { flex-wrap: wrap; align-items: center; gap: 0.3rem; }
+.ctl-cal-deg { width: 3.4rem; }
+.ctl-cal-note { margin: 0.25rem 0 0; }

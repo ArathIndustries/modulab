@@ -72,6 +72,29 @@ The modulab firmware streams over USB serial and Bluetooth at the same time.
 - The **Dashboard** tab is the diagnostic view: raw values, sample rate, and a
   protocol console showing the exact frames your board is sending.
 
+## Calibrate: make the screen turn like the real lever
+
+A fresh rig always looks a little wrong: the arm starts at some random angle
+and turns more or less than your hand does. That is not the stream — the
+printed lever is press-fit onto the pot shaft at whatever angle it went on,
+and no two pots sweep the same degrees. Fix it once per rig, in the app,
+with the board streaming:
+
+1. **Edit** (top right) → click the arm segment in the scene → under
+   **Control** its knob card ends with *Match the real part*; **input now**
+   moves with your pot.
+2. Hold the real segment in the pose the screen shows at rest (the
+   **angle °** field — 60° for the shoulder) and click **Zero here**. The
+   screen now sits where the real part sits.
+3. Turn the real segment a quarter turn counter-clockwise *as you see it on
+   screen* (or change the number/direction to what you actually did) and
+   click **Set swing**. The screen now turns exactly as far as the real part.
+4. Repeat for the elbow — its resting angle is relative to the upper arm, so
+   hold it at rest *relative to the segment it rides on*.
+
+Zero first, then swing: swing keeps the zero. The result is saved with the
+scene draft (and in **Export**); **Restore scene** throws it away.
+
 ## Next steps once it works
 
 - Streaming from your own board already? You are one step from a custom

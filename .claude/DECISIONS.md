@@ -6,3 +6,12 @@
 - Joints independent by default; PoL cross-coupled patch kept as preset
 - UI language: sentences + roles, not schema terms; selection-scoped panels
 - Clean-room MIT; wire-compatible with PowderOfLife; model asset attributed
+
+## 2026-08-27 — calibration (work-laptop session)
+- Calibration lives in the scene document (driver baseline/amplitude), never
+  in firmware: the board stays dumb and raw stays raw
+- Zero = the object's resting rotationZ (the pose the scene draws with no
+  input); two-point swing folds direction into amplitude's sign and drops
+  `invert` (flip stays as a manual knob for un-calibrated drivers)
+- Direction convention for "turned °": counter-clockwise on screen is +
+  (scene +Z, viewed from the default camera)

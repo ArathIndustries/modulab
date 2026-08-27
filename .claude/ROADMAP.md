@@ -15,8 +15,9 @@ Layering plan lives in AUTHORING.md (authoritative). Status 2026-07-27:
 
 ## Cross-cutting, unscheduled
 
-- HARDWARE VALIDATION (oldest open item): bare-board USB+BLE smoke, friend
-  rig, then feel-constant tuning (normalization scale, friction)
+- HARDWARE VALIDATION: BLE rig live 8/27; calibration verbs shipped (Zero
+  here / Set swing). Next: record Arath's measured sweep + direction, friend
+  rig over serial, then feel-constant tuning (friction, lerp)
 - hello v2: per-channel metadata (kind/unit/range) → auto module-to-scene
   binding
 - Android phone BLE demo; more module archetypes (FSR, flex, encoder)

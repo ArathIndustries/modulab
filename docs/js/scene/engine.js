@@ -558,6 +558,10 @@ export async function instantiateScene(def, { scene, getChannel }) {
         },
         get patchNames() { return Object.keys(patches); },
         get currentPatch() { return currentPatch; },
+        /** Live value of a driver input ('ch:N' normalized 0-1, or a node),
+         *  null until that input has produced anything — what calibration
+         *  reads (docs/js/scene/calibrate.js). */
+        inputValue(ref) { return resolveRef(ref); },
         setPatch,
         resetDynamics: () => resetDynamics(null),
         driverReadout() {

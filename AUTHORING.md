@@ -128,6 +128,19 @@ are just `ch:N` refs — [PROTOCOL.md → Build your own module](PROTOCOL.md#bui
 (0 = snap, 0.2 ≈ the PoL feel). v0 property: `rotationZ`; the schema grows to
 `position*/scale*/material.*` when a scene needs them — rule 1.
 
+**Calibrating against a real knob** (inspector → Control → the driver card,
+*Match the real part*): a printed part is press-fit onto the pot shaft at an
+arbitrary angle, no pot sweeps exactly 250°, and the wiring picks the
+direction — so `baseline`/`amplitude` are measured, not typed. *Zero here*
+reads the live input `k` and sets `baseline = rest − amplitude·signal(k)`
+(rest = the object's `rotationZ`), so the screen matches the real part's
+resting pose. *Set swing* reads a second point after you turn the real part
+by `turned°` and sets `amplitude = turned / (k₁ − k₀)` — sign included, so
+`invert` is dropped — then re-solves `baseline` to keep the zero. Both are
+ordinary driver edits: they live in the draft and export with the scene;
+firmware keeps sending raw counts. Pure functions + tests:
+`docs/js/scene/calibrate.js`, `tests/calibrate.test.mjs` (`node --test tests/calibrate.test.mjs`).
+
 ### Overlays (lesson layer, slice 1)
 
 In-scene analysis, declared by the document and rendered inside the world:

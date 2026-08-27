@@ -444,6 +444,7 @@ export function renderSandbox(container) {
             importDoc,
             revertDraft,
             getCurrentPatch: () => inst?.currentPatch ?? doc?.defaultPatch ?? 'default',
+            inputValue: (ref) => inst?.inputValue(ref) ?? null,
         });
         inspector.render();
         setGizmoMode('translate');

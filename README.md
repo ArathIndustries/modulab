@@ -13,6 +13,7 @@ the runtime. Web Serial + Web Bluetooth in, scenes-as-data out.
 | **See it work** | any desktop Chrome/Edge | 30 s | open the [live app](https://arathindustries.github.io/modulab/), click **Manual sliders** (or **Demo signal**) |
 | **Drive it with an Arduino I have** | any Arduino-ish board, USB | 5 min | [TESTING.md → Path A](TESTING.md#path-a--any-arduino-compatible-board-over-usb-5-minutes) |
 | **Run the reference module (USB + Bluetooth)** | Arduino Nano 33 BLE | 15 min | [TESTING.md → Path B](TESTING.md#path-b--arduino-nano-33-ble--ble-sense-usb--bluetooth) |
+| **Make the screen turn like my real lever** | a streaming board | 2 min | [TESTING.md → Calibrate](TESTING.md#calibrate-make-the-screen-turn-like-the-real-lever) |
 | **Build my own module** | any MCU that prints text | 30 min | [PROTOCOL.md → Build a module](PROTOCOL.md#build-your-own-module) |
 | **Make or modify a scene** | a text editor | 10 min | [AUTHORING.md → Your first scene](AUTHORING.md#your-first-scene-10-minutes) |
 | **Work on the app itself** | git, local HTTP server | — | [Development](#development) below |

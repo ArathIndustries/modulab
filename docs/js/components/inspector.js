@@ -13,8 +13,10 @@
  *
  * ctx contract: getDoc, getSelected, setSelected, isDraft, exportDoc,
  * importDoc, revertDraft, getCurrentPatch, commit({rebuild}),
- * liveTransform(id)
+ * liveTransform(id), inputValue(ref)
  */
+
+import { zeroDriver, spanDriver } from '../scene/calibrate.js';
 
 // Tree rows describe ROLES in one plain word, with a dot color that matches
 // what the object looks like in the scene (glance ruling 2026-07-27).
@@ -94,6 +96,121 @@ export function mountInspector(container, ctx) {
         el.textContent = text;
         if (tooltip) el.title = tooltip;
         return el;
+    }
+
+
+    // --- calibration: make the real part and the screen agree -----------------
+    // Step 2 measures from the zero point step 1 took; that transient state
+    // is keyed by the driver object itself, so a doc swap (undo, import,
+    // restore) simply restarts the two steps. The math is pure and tested:
+    // docs/js/scene/calibrate.js.
+    const calState = new WeakMap();
+    const liveEls = new Set();
+    const liveTimer = setInterval(() => {
+        for (const l of liveEls) {
+            const v = ctx.inputValue?.(l.ref) ?? null;
+            l.el.textContent = v == null ? 'nothing yet — connect a knob' : fmtInput(l.ref, v);
+            l.el.classList.toggle('is-off', v == null);
+            l.zeroBtn.disabled = v == null;
+            l.swingBtn.disabled = v == null || !calState.has(l.d);
+        }
+    }, 120);
+
+    function fmtInput(ref, v) {
+        return ref.startsWith('ch:') ? `${(v * 1023).toFixed(0)} raw` : v.toFixed(3);
+    }
+
+    function button(text, tooltip) {
+        const el = document.createElement('button');
+        el.className = 'ctl-cal-btn';
+        el.textContent = text;
+        el.title = tooltip;
+        return el;
+    }
+
+    /** fieldRow without the <label> — for rows that hold buttons. */
+    function plainRow(label, tooltip, ...inputs) {
+        const row = document.createElement('div');
+        row.className = 'insp-row';
+        const span = document.createElement('span');
+        span.textContent = label;
+        if (tooltip) span.title = tooltip;
+        row.appendChild(span);
+        const holder = document.createElement('div');
+        holder.className = 'insp-inputs';
+        for (const i of inputs) holder.appendChild(i);
+        row.appendChild(holder);
+        return row;
+    }
+
+    function calibrationRows(d, obj) {
+        const wrap = document.createElement('div');
+        wrap.className = 'ctl-cal';
+        const rest = obj.rotationZ ?? 0;
+        const st = calState.get(d);
+
+        const cap = document.createElement('div');
+        cap.className = 'ctl-cal-cap';
+        cap.textContent = 'Match the real part';
+        cap.title = 'Measure starting angle and swing from the real knob instead of typing them. Zero first, then swing — swing keeps the zero.';
+        wrap.appendChild(cap);
+
+        const live = document.createElement('b');
+        live.className = 'ctl-cal-live';
+        live.textContent = '—';
+        wrap.appendChild(plainRow('input now', 'what the input driving this object reads right now', live));
+
+        const zeroBtn = button('Zero here',
+            `Hold the real part at its resting angle (${rest}°, the angle above), then click: starting angle is set so the screen matches.`);
+        zeroBtn.addEventListener('click', () => {
+            const k = ctx.inputValue(d.input);
+            if (k == null) return;
+            zeroDriver(d, k, rest);
+            calState.set(d, { k0: k, rest, note: `Zeroed at ${fmtInput(d.input, k)}. Now turn the real part and set the swing.` });
+            ctx.commit({});
+            render();
+        });
+        wrap.appendChild(plainRow('1 · zero', `real part resting at ${rest}°, then`, zeroBtn));
+
+        const amount = numberInput(90, 1, () => {}, 'how far you turned the real part, in degrees');
+        amount.className = 'ctl-cal-deg';
+        const dir = selectInput([
+            { value: 1, label: '↺ counter-clockwise' },
+            { value: -1, label: '↻ clockwise' },
+        ], 1, () => {}, 'direction as you see it on screen');
+        const swingBtn = button('Set swing',
+            'Turn the real part by the amount shown, then click: swing is measured from how far the input moved. Flip is no longer needed after this.');
+        swingBtn.disabled = !st;
+        swingBtn.addEventListener('click', () => {
+            const s = calState.get(d);
+            const k1 = ctx.inputValue(d.input);
+            if (!s || k1 == null) return;
+            const turned = (Number.parseFloat(amount.value) || 0) * Number(dir.value);
+            if (!turned) {
+                s.note = 'Enter how far you turned the real part first.';
+                render();
+                return;
+            }
+            if (!spanDriver(d, s.k0, k1, turned, s.rest)) {
+                s.note = 'The input barely moved since zero — turn the real part further, then try again.';
+                render();
+                return;
+            }
+            s.note = `Swing set: a full input sweep turns it ${Math.abs(d.amplitude).toFixed(0)}° `
+                + `${d.amplitude < 0 ? 'clockwise' : 'counter-clockwise'}. Zero kept.`;
+            ctx.commit({});
+            render();
+        });
+        wrap.appendChild(plainRow('2 · swing', 'then turn the real part by this much and', amount, dir, swingBtn));
+
+        if (st?.note) {
+            const note = document.createElement('p');
+            note.className = 'hint ctl-cal-note';
+            note.textContent = st.note;
+            wrap.appendChild(note);
+        }
+        liveEls.add({ d, ref: d.input, el: live, zeroBtn, swingBtn });
+        return wrap;
     }
 
     // --- authoring verbs -------------------------------------------------------
@@ -178,6 +295,7 @@ export function mountInspector(container, ctx) {
     // --- render ---------------------------------------------------------------
 
     function render() {
+        liveEls.clear();
         if (destroyed) return;
         const doc = ctx.getDoc();
         if (!doc) { container.innerHTML = '<p class="hint">No scene loaded.</p>'; return; }
@@ -416,6 +534,7 @@ export function mountInspector(container, ctx) {
             inv.addEventListener('change', () => { d.invert = inv.checked; liveD(); });
             card.appendChild(fieldRow('flip direction', 'invert', inv));
 
+            card.appendChild(calibrationRows(d, obj));
             container.appendChild(card);
         }
 
@@ -456,6 +575,6 @@ export function mountInspector(container, ctx) {
             container.querySelector('.draft-chip')?.toggleAttribute('hidden', !isDraft);
             container.querySelector('[data-a="revert"]')?.toggleAttribute('hidden', !isDraft);
         },
-        destroy() { destroyed = true; container.innerHTML = ''; },
+        destroy() { destroyed = true; clearInterval(liveTimer); liveEls.clear(); container.innerHTML = ''; },
     };
 }

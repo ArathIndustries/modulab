@@ -1,6 +1,6 @@
 # SNAPSHOT — modulab
 
-Updated: 2026-07-27 22:09 (session 04590297)
+Updated: 2026-08-27 (work-laptop session; calibration)
 
 ## Where we are
 
@@ -17,6 +17,13 @@ Dashboard/Twin tabs are legacy, capabilities folded in or superseded.
   rest/swing/response/flip), add/delete/rename/reparent, driver CRUD,
   per-scene localStorage drafts WITH baseline tracking (update notice +
   Restore scene button), export/import, Blank bench (?scene=blank) + New.
+- **Calibration** (8/27, first hardware-driven feature): every driver card
+  ends with *Match the real part* — **Zero here** (one point: baseline so
+  the live input = the object's resting rotationZ) then **Set swing** (two
+  points: amplitude = turned° / Δk, sign folded in, invert dropped, zero
+  kept). Pure math `docs/js/scene/calibrate.js` + `tests/calibrate.test.mjs`
+  (node --test); engine exposes `inputValue(ref)`. Ordinary driver edits →
+  draft/export, firmware untouched.
 - **Overlays (lesson layer)**: vector, label (+{speed}{height}{ke}{pe}),
   contacts (solver impulses), trail, graph (pivot sparklines: deg/omega/
   speed/ref). pol-lever-arm carries θ₀+ω₀ (shoulder), θ₁ (elbow), toy
@@ -30,11 +37,14 @@ Dashboard/Twin tabs are legacy, capabilities folded in or superseded.
 
 ## NOT yet true
 
-- **NO hardware has ever touched this stack** — bare-board USB+BLE smoke
-  (Arath) and friend's-rig serial test are the oldest open items.
+- Hardware: Arath's knob rig streams over BLE (8/27) and showed the
+  expected mis-sync (random start angle, wrong sweep) — calibration was
+  built for it; first measured sweep/direction numbers not yet recorded.
+  Friend's-rig serial test still open.
 - Node graph not editable in-app; overlays not editable in-app; torque
   arcs need a mass field on parts; feel constants (n/1023 scale, cannon
-  friction) unvalidated against real knobs.
+  friction) unvalidated against real knobs; manual sliders still default to
+  511.5 (parks the arm at −65°, not rest).
 
 ## Standing design rules (Arath, 7/27)
 
