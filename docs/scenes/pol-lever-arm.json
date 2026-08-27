@@ -124,7 +124,7 @@
         0,
         0
       ],
-      "rotationZ": 60,
+      "rotationZ": 0,
       "body": "kinematic",
       "collider": {
         "size": [
@@ -150,7 +150,7 @@
         0,
         0.661
       ],
-      "rotationZ": -30,
+      "rotationZ": 0,
       "body": "kinematic",
       "collider": {
         "size": [
@@ -250,7 +250,7 @@
         "target": "upper-arm",
         "property": "rotationZ",
         "input": "ch:0",
-        "baseline": 60,
+        "baseline": 125.0,
         "amplitude": 250,
         "invert": true,
         "lerp": 0.2
@@ -259,7 +259,7 @@
         "target": "forearm",
         "property": "rotationZ",
         "input": "ch:1",
-        "baseline": -30,
+        "baseline": 125.0,
         "amplitude": -250,
         "lerp": 0.2
       }

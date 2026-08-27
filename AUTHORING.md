@@ -85,7 +85,7 @@ are just `ch:N` refs — [PROTOCOL.md → Build your own module](PROTOCOL.md#bui
     { "id": "root", "type": "group", "position": [-8, 0, 0], "rotationZ": 180 },
 
     { "id": "upper-arm", "type": "model", "model": "lever60", "material": "arm",
-      "parent": "root", "position": [0, 0, 0], "rotationZ": 60,
+      "parent": "root", "position": [0, 0, 0], "rotationZ": 0,
       "body": "kinematic", "collider": { "size": [6, 0.7, 3], "offset": [-3, 0, 0] } }
   ],
 
@@ -99,9 +99,9 @@ are just `ch:N` refs — [PROTOCOL.md → Build your own module](PROTOCOL.md#bui
   "patches": {                      // named driver sets; UI toggles between them
     "independent": [
       { "target": "upper-arm", "property": "rotationZ", "input": "ch:0",
-        "baseline": 60, "amplitude": 250, "invert": true, "lerp": 0.2 },
+        "baseline": 125, "amplitude": 250, "invert": true, "lerp": 0.2 },
       { "target": "forearm", "property": "rotationZ", "input": "ch:1",
-        "baseline": -30, "amplitude": -250, "lerp": 0.2 }
+        "baseline": 125, "amplitude": -250, "lerp": 0.2 }
     ],
     // more named sets here show a preset selector in the HUD (per visit, not remembered)
   },
