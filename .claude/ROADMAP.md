@@ -1,6 +1,6 @@
 # ROADMAP — modulab
 
-Layering plan lives in AUTHORING.md (authoritative). Status 2026-07-27:
+Layering plan lives in EDIT-THE-SCENE.md (authoritative). Status 2026-07-27:
 
 1. Engine runs scene documents — SHIPPED
 2. Workspace (full-bleed viewport + HUD; tabs folded) — SHIPPED

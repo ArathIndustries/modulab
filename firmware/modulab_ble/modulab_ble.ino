@@ -2,31 +2,37 @@
   modulab firmware — "knob2" module (2 potentiometers)
   Board: Arduino Nano 33 BLE / Nano 33 BLE Sense Rev2 (nRF52840, mbed core)
 
-  Streams two analog channels over BOTH transports simultaneously:
-    - USB serial, 9600 baud
-    - BLE notify characteristic (same text frames)
+  What this sends: two knob readings, 50 times a second, over USB serial
+  (9600 baud) and Bluetooth at the same time — the same text frames on
+  both. Every ~5 s it also introduces itself (name + knob count) so the
+  app can show what it's talking to.
 
-  Wire protocol v1 (see PROTOCOL.md at repo root):
-    <h:knob2:2>   hello — module name : channel count (repeats every 5 s)
-    <0:512.0>     channel frame — channel int : value float, 0-1023 raw ADC
+  Wire format (full reference: BUILD-A-MODULE.md at the repo root):
+    <h:knob2:2>   the board introducing itself — name : knob count, every 5 s
+    <0:512.0>     one knob's reading — knob number : value, 0-1023 raw ADC
 
   WIRING — 3.3 V ONLY. nRF52840 pins are NOT 5 V tolerant:
-    each pot: outer legs -> 3V3 and GND, wiper -> A0 (ch 0) / A1 (ch 1).
-    A bare board with nothing wired also works for smoke tests — the
-    floating pins stream noise, which is still valid protocol traffic.
+    each pot: outer legs -> 3V3 and GND, wiper -> A0 (knob 0) / A1 (knob 1).
+    A bare board with nothing wired also works for a first test — the
+    floating pins stream noise, which is still a valid frame.
+
+  Adding a knob? See CHANNEL_PINS below — that's the one change most
+  people need. Setup walkthrough: CONNECT.md. Wire format details:
+  BUILD-A-MODULE.md.
 */
 
 #include <ArduinoBLE.h>
 
 const char* MODULE_NAME = "knob2";
 
-// MORE SENSORS? Add pins here and bump NUM_CHANNELS — that is the whole
-// change. The app side needs nothing: channels self-register everywhere
-// (dashboard cards, scene "Knob N" choices, the hello count) from what
-// this array streams. Example for four knobs:
+// MORE SENSORS? Add a pin here and bump NUM_CHANNELS — that is the whole
+// change. The app needs nothing else: knobs self-register everywhere
+// (Diagnostics cards, the knob choices in Edit scene, the board's
+// self-introduction count) from what this array streams. Example for
+// four knobs:
 //   const int CHANNEL_PINS[] = { A0, A1, A2, A3 };
 //   const int NUM_CHANNELS = 4;
-// Practical ceiling: 6 channels (the 64-byte BLE frame; USB has no limit).
+// Practical ceiling: 6 knobs (the 64-byte BLE frame; USB has no limit).
 const int CHANNEL_PINS[] = { A0, A1 };
 const int NUM_CHANNELS = 2;
 

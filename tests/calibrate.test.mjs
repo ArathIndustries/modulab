@@ -1,3 +1,9 @@
+// Tests for the calibration math behind Edit scene's Calibrate with the
+// real part (and the HUD's Calibrate knobs): Zero sets a link's starting
+// angle so the current knob reading matches the part's resting angle;
+// Set swing then measures a second point and sets the swing, folding in
+// direction. Run with: node --test tests/calibrate.test.mjs
+
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { zeroDriver, spanDriver, angleOf, MIN_INPUT_TRAVEL } from '../docs/js/scene/calibrate.js';
