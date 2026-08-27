@@ -16,6 +16,7 @@ import { RoomEnvironment } from '../../vendor/RoomEnvironment.js';
 import { stream } from '../stream.js';
 import { mountConnectBar } from '../components/connectbar.js';
 import { mountInspector } from '../components/inspector.js';
+import { maybeShowOrientation } from '../components/orientation.js';
 import { instantiateScene } from '../scene/engine.js';
 
 const PATCH_TIPS = {
@@ -56,6 +57,8 @@ export function renderSandbox(container) {
             </div>
         </div>
     `;
+
+    maybeShowOrientation();
 
     const unmountBar = mountConnectBar(container.querySelector('#connect-mount'));
     const canvas = container.querySelector('.twin-canvas');

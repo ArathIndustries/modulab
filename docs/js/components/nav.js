@@ -4,6 +4,7 @@
  */
 import { toggleTheme, getTheme } from '../theme.js';
 import { CONFIG } from '../config.js';
+import { showOrientation } from './orientation.js';
 
 // One product view. The raw instrument panel stays reachable at #/dashboard
 // (linked from About and TESTING.md as Diagnostics) but is not a tab; the
@@ -28,6 +29,7 @@ export function renderNav(container, activeRoute) {
             </ul>
             <div class="nav-actions">
                 <a class="btn-icon" href="${CONFIG.REPO_URL}" title="GitHub" target="_blank" rel="noopener">↗</a>
+                ${activeRoute === 'sandbox' ? '<button class="btn-icon" id="orient-help" title="How the screen is laid out">?</button>' : ''}
                 <button class="btn-icon" id="theme-toggle" title="${themeLabel}">${themeIcon}</button>
             </div>
         </nav>
@@ -37,4 +39,5 @@ export function renderNav(container, activeRoute) {
         toggleTheme();
         renderNav(container, activeRoute);
     });
+    container.querySelector('#orient-help')?.addEventListener('click', () => showOrientation());
 }

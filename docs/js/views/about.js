@@ -1,54 +1,69 @@
 /**
- * About view — what modulab is, what it needs, where it is going.
+ * About view — what modulab is, what it needs, where the docs are.
+ * Same descriptive register as the rest of the app: label -> value and
+ * short bullets, not paragraphs.
  */
 import { CONFIG } from '../config.js';
+
+const DOCS = `${CONFIG.REPO_URL}/blob/main`;
 
 export function renderAbout(container) {
     container.innerHTML = `
         <div class="view about">
             <h1>About modulab</h1>
-            <p><strong>Physical modules, live in the browser.</strong> Plug a sensor
-            module into a dev board, open this page, connect — every channel the
-            hardware announces shows up and streams. No install: the browser is
-            the runtime.</p>
+            <p><strong>Physical modules, live in the browser.</strong> Plug sensors
+            into a dev board, open the URL — the browser is the runtime (Web Serial +
+            Web Bluetooth in, a 3D physics scene out). Scenes are JSON documents, not
+            code. Live at <a href="https://arathindustries.github.io/modulab/" target="_blank" rel="noopener">arathindustries.github.io/modulab</a>.</p>
+
+            <h2>The ladder</h2>
+            <ul>
+                <li><strong>See it</strong> — open the <a href="https://arathindustries.github.io/modulab/" target="_blank" rel="noopener">live app</a>, click Manual sliders or Demo signal.</li>
+                <li><strong>Drive it</strong> — any Arduino-ish board over USB: <a href="${DOCS}/TESTING.md#path-a--any-arduino-compatible-board-over-usb-5-minutes" target="_blank" rel="noopener">TESTING.md → Path A</a>.</li>
+                <li><strong>Build a module</strong> — any MCU that prints text: <a href="${DOCS}/PROTOCOL.md#build-your-own-module" target="_blank" rel="noopener">PROTOCOL.md → Build a module</a>.</li>
+                <li><strong>Author a scene</strong> — edit the JSON directly: <a href="${DOCS}/AUTHORING.md#your-first-scene-10-minutes" target="_blank" rel="noopener">AUTHORING.md → Your first scene</a>.</li>
+            </ul>
 
             <h2>Connecting</h2>
             <ul>
-                <li><strong>USB serial</strong> — desktop Chrome/Edge. Works with any board
-                    speaking the wire protocol at 9600 baud, including existing
-                    PowderOfLife sketches.</li>
-                <li><strong>Bluetooth</strong> — Chrome/Edge desktop and Android Chrome
-                    (iOS Safari does not support Web Bluetooth). Needs the modulab
-                    firmware on a BLE-capable board such as the Arduino Nano 33 BLE.</li>
-                <li><strong>Demo signal</strong> — no hardware at all; synthetic channels
-                    exercise the whole pipeline.</li>
-                <li><strong>Manual sliders</strong> — drive every channel by hand from an
-                    on-screen panel (add channels as needed). Same wire protocol as real
-                    firmware, so anything built against it works unchanged when hardware
-                    replaces the sliders. URL presets: <code>?manual=1&amp;ch0=200&amp;ch1=900</code>.</li>
+                <li><strong>USB serial</strong> — desktop Chrome or Edge only.</li>
+                <li><strong>Bluetooth</strong> — Chrome/Edge desktop or Android Chrome; not iOS Safari.</li>
+                <li><strong>Demo signal</strong> — no hardware, synthetic channels exercise the whole pipeline.</li>
+                <li><strong>Manual sliders</strong> — drive every channel by hand; URL presets
+                    <code>?manual=1&amp;ch0=200&amp;ch1=900</code>.</li>
             </ul>
 
             <h2>Hardware</h2>
-            <p>Reference module: Arduino Nano 33 BLE + two potentiometers.
-            <strong>Wire pots to 3V3, never 5&nbsp;V</strong> — the nRF52840's pins are not
-            5&nbsp;V tolerant. Firmware lives in <code>firmware/modulab_ble/</code> in the repo.</p>
+            <ul>
+                <li><strong>Reference module</strong> — Arduino Nano 33 BLE + two potentiometers on A0/A1.</li>
+                <li><strong>Power</strong> — 3V3 only, never 5V (the nRF52840's pins are not 5V-tolerant).</li>
+                <li><strong>Firmware</strong> — <code>firmware/modulab_ble/</code> in the repo.</li>
+                <li><strong>Any other board</strong> — works if it prints <code>&lt;ch:value&gt;</code> frames
+                    (see <a href="${DOCS}/PROTOCOL.md" target="_blank" rel="noopener">PROTOCOL.md</a>).</li>
+            </ul>
 
-            <h2>Where this is going</h2>
-            <p>The dashboard is the substrate. Next layers: physics-lesson overlays
-            (lever torque, beam reactions, then mechanics of materials) that turn a
-            physical knob into live engineering quantities, and module
-            self-registration so each hardware module declares what it is and the
-            right lesson loads itself.</p>
+            <h2>Match my rig</h2>
+            <p>A fresh rig never turns quite right: the printed lever is press-fit onto
+            the pot shaft at whatever angle it went on, and no two pots sweep the same
+            degrees. After connecting, each knob-driven part's control card walks you
+            through two clicks — <strong>Zero here</strong> (locks the part's resting
+            pose) then, optionally, <strong>Set swing</strong> (turn the part and lock
+            how far it sweeps). Saved with the scene draft and in Export.</p>
 
-            <h2>Provenance</h2>
-            <p>Inspired by Andrew Frueh's
-            <a href="https://github.com/andrewfrueh/PowderOfLife" target="_blank" rel="noopener">Powder Of Life</a>
-            and lessons learned porting it to the Nano 33 BLE. modulab is a
-            clean-room implementation — no PowderOfLife code — that stays
-            wire-compatible with its serial frames. Code is MIT licensed. The
-            Twin view renders Frueh's actual printable 60&nbsp;mm potentiometer
-            lever model, used with attribution under its upstream license
-            (see <code>models/README.md</code>).</p>
+            <h2>Diagnostics</h2>
+            <p><a href="#/dashboard">#/dashboard</a> — raw channel values, sample rate,
+            protocol console.</p>
+
+            <h2>Provenance &amp; license</h2>
+            <ul>
+                <li>Inspired by Andrew Frueh's
+                    <a href="https://github.com/andrewfrueh/PowderOfLife" target="_blank" rel="noopener">Powder Of Life</a> —
+                    modulab is a clean-room reimplementation (MIT), wire-compatible with
+                    its serial frames, no PowderOfLife code.</li>
+                <li>The workspace renders Frueh's printable lever model with attribution
+                    (<a href="${DOCS}/docs/models/README.md" target="_blank" rel="noopener">docs/models/README.md</a>) —
+                    CERN-OHL-W / CC BY-SA upstream, not covered by modulab's MIT license.</li>
+            </ul>
 
             <p><a href="${CONFIG.REPO_URL}" target="_blank" rel="noopener">Source on GitHub ↗</a></p>
         </div>
