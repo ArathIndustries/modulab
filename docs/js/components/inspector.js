@@ -107,9 +107,19 @@ export function mountInspector(container, ctx) {
     const calState = new WeakMap();
     const liveEls = new Set();
     const baselineEls = new Map(); // driver -> its 'starting angle' input (refreshed by followRest)
+    const inputHist = new WeakMap(); // driver -> last few polled readings (ADC noise averages out)
+    const SETTLE_POLLS = 5; // x 120 ms = the last ~0.6 s
     const liveTimer = setInterval(() => {
         for (const l of liveEls) {
             const v = ctx.inputValue?.(l.ref) ?? null;
+            if (v != null) {
+                const h = inputHist.get(l.d) ?? [];
+                h.push(v);
+                if (h.length > SETTLE_POLLS) h.shift();
+                inputHist.set(l.d, h);
+            } else {
+                inputHist.delete(l.d);
+            }
             l.el.textContent = v == null ? 'nothing yet — connect a knob' : fmtInput(l.ref, v);
             l.el.classList.toggle('is-off', v == null);
             l.zeroBtn.disabled = v == null;
@@ -135,6 +145,15 @@ export function mountInspector(container, ctx) {
             const el = baselineEls.get(d);
             if (el && document.activeElement !== el) el.value = d.baseline;
         }
+    }
+
+    /** The input's settled value for a calibration click: the mean of the
+     *  last ~0.6 s of readings, so one noisy sample cannot become the zero
+     *  (each ADC count is amplitude/1023 degrees — 0.24° on the stock arm). */
+    function settledInput(d) {
+        const h = inputHist.get(d);
+        if (h?.length) return h.reduce((a, b) => a + b, 0) / h.length;
+        return ctx.inputValue?.(d.input) ?? null;
     }
 
     function fmtInput(ref, v) {
@@ -185,7 +204,7 @@ export function mountInspector(container, ctx) {
         const zeroBtn = button('Zero here',
             `Hold the real part at its resting angle (${rest}°, the angle above), then click: starting angle is set so the screen matches.`);
         zeroBtn.addEventListener('click', () => {
-            const k = ctx.inputValue(d.input);
+            const k = settledInput(d);
             if (k == null) return;
             zeroDriver(d, k, restNow());
             calState.set(d, { k0: k, rest: restNow(), note: `Zeroed at ${fmtInput(d.input, k)}. Now turn the real part and set the swing.` });
@@ -205,7 +224,7 @@ export function mountInspector(container, ctx) {
         swingBtn.disabled = !st;
         swingBtn.addEventListener('click', () => {
             const s = calState.get(d);
-            const k1 = ctx.inputValue(d.input);
+            const k1 = settledInput(d);
             if (!s || k1 == null) return;
             const turned = (Number.parseFloat(amount.value) || 0) * Number(dir.value);
             if (!turned) {

@@ -94,6 +94,8 @@ with the board streaming:
 4. Repeat for the elbow — its resting angle is relative to the upper arm, so
    hold it at rest *relative to the segment it rides on*.
 
+Hold still for a second before each click — both buttons average the last
+half-second of readings so pot noise cannot become the zero.
 Zero first, then swing: swing keeps the zero. The result is saved with the
 scene draft (and in **Export**); **Restore scene** throws it away.
 
