@@ -4,6 +4,7 @@
 - Scenes are data (JSON schema v0); engine never special-cases a scene
 - Document = single source of truth; drafts record their baseline
 - Joints independent by default; PoL cross-coupled patch kept as preset
+  (REVERSED 2026-08-27: preset and its nodes removed from the scene — see below)
 - UI language: sentences + roles, not schema terms; selection-scoped panels
 - Clean-room MIT; wire-compatible with PowderOfLife; model asset attributed
 
@@ -21,3 +22,8 @@
 - Motion-preset choice is per visit, not persisted: a fresh load always
   starts on the scene default (independent). The remembered pol-original
   preset silently broke elbow calibration on the first rig
+- The shipped scene has ONE motion setup: each knob turns its own joint.
+  The PowderOfLife cross-coupled preset (elbow = f(both knobs)) and the
+  gen1/mixAdd/mixSub nodes that fed it are gone from pol-lever-arm.json —
+  a twin's parts move only when the physical part moves (Arath). Node
+  graphs stay in the schema/engine for scenes that want them.

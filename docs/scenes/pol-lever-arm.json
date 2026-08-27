@@ -166,28 +166,6 @@
       }
     }
   ],
-  "nodes": [
-    {
-      "id": "gen1",
-      "kind": "const",
-      "value": 1
-    },
-    {
-      "id": "mixAdd",
-      "kind": "mix",
-      "mode": "add",
-      "a": "node:gen1",
-      "b": "ch:0"
-    },
-    {
-      "id": "mixSub",
-      "kind": "mix",
-      "mode": "subtract",
-      "a": "ch:1",
-      "aAmp": -1,
-      "b": "node:mixAdd"
-    }
-  ],
   "overlays": [
     {
       "type": "vector",
@@ -283,25 +261,6 @@
         "input": "ch:1",
         "baseline": -30,
         "amplitude": -250,
-        "lerp": 0.2
-      }
-    ],
-    "pol-original": [
-      {
-        "target": "seg0",
-        "property": "rotationZ",
-        "input": "ch:0",
-        "baseline": 60,
-        "amplitude": 250,
-        "invert": true,
-        "lerp": 0.2
-      },
-      {
-        "target": "seg1",
-        "property": "rotationZ",
-        "input": "node:mixSub",
-        "baseline": -30,
-        "amplitude": 250,
         "lerp": 0.2
       }
     ]

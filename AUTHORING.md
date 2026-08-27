@@ -89,7 +89,8 @@ are just `ch:N` refs — [PROTOCOL.md → Build your own module](PROTOCOL.md#bui
       "body": "kinematic", "collider": { "size": [6, 0.7, 3], "offset": [-3, 0, 0] } }
   ],
 
-  "nodes": [                        // data node graph, normalized 0-1 domain
+  "nodes": [                        // OPTIONAL data node graph, normalized 0-1 domain
+                                    // (the shipped scene has none: each knob turns its own joint)
     { "id": "gen1", "kind": "const", "value": 1 },
     { "id": "mixAdd", "kind": "mix", "mode": "add", "a": "node:gen1", "b": "ch:0" },
     { "id": "mixSub", "kind": "mix", "mode": "subtract", "a": "ch:1", "aAmp": -1, "b": "node:mixAdd" }
@@ -102,7 +103,7 @@ are just `ch:N` refs — [PROTOCOL.md → Build your own module](PROTOCOL.md#bui
       { "target": "seg1", "property": "rotationZ", "input": "ch:1",
         "baseline": -30, "amplitude": -250, "lerp": 0.2 }
     ],
-    "pol-original": [ /* drivers reading node:mixSub — the decoded patch */ ]
+    // more named sets here show a preset selector in the HUD (per visit, not remembered)
   },
   "defaultPatch": "independent"
 }

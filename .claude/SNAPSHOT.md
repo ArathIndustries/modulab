@@ -28,6 +28,10 @@ Dashboard/Twin tabs are legacy, capabilities folded in or superseded.
   fix for the 8/27 rig session where the elbow zeroed against a stale rest.
   Preset choice no longer persisted across loads; node-driven objects say
   so on their card. Rig result 8/27: both arms zeroed flat, tracking right.
+  pol-original preset + its nodes REMOVED from the shipped scene (one
+  setup, so no preset radios in the HUD). NEXT: bake Arath's exported
+  calibration into pol-lever-arm.json; newcomer orientation of the GUI
+  (inventory in progress — nobody fresh can tell what the controls are).
 - **Overlays (lesson layer)**: vector, label (+{speed}{height}{ke}{pe}),
   contacts (solver impulses), trail, graph (pivot sparklines: deg/omega/
   speed/ref). pol-lever-arm carries θ₀+ω₀ (shoulder), θ₁ (elbow), toy
