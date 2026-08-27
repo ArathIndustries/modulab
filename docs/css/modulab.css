@@ -7,10 +7,28 @@
 /* Connect bar */
 .connect-bar {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.6rem;
+    flex-direction: column;
+    gap: 0.4rem;
     margin-bottom: 0.5rem;
+}
+.connect-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.connect-head b { color: var(--text-primary); font-size: 0.85rem; }
+.connect-options {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.7rem;
+}
+.connect-opt {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
 }
 .btn {
     background: var(--accent-primary);
@@ -297,6 +315,9 @@
     padding-right: 0.25rem;
 }
 .hud .twin-badge { background: transparent; border: none; padding: 0.1rem 0.3rem; }
+.hud-ctl { display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; }
+.readout-head { flex-basis: 100%; display: flex; align-items: baseline; gap: 0.5rem; }
+.readout-head b { color: var(--text-primary); font-size: 0.8rem; }
 /* Inspector — right-side drawer over the viewport */
 .hud.inspector {
     top: 4.4rem;
@@ -320,8 +341,9 @@
     flex-wrap: wrap;
     margin-bottom: 0.4rem;
 }
-.insp-head b { color: var(--text-primary); font-size: 0.9rem; flex: 1; }
-.insp-head-btns { display: flex; gap: 0.35rem; }
+.insp-head-title { display: flex; flex-direction: column; gap: 0.1rem; flex: 1; }
+.insp-head-title b { color: var(--text-primary); font-size: 0.9rem; }
+.insp-head-btns { display: flex; gap: 0.35rem; flex-wrap: wrap; }
 .insp-head-btns button {
     background: none;
     border: 1px solid var(--border-color);
@@ -390,18 +412,32 @@
 }
 .insp-row {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.5rem;
     padding: 0.18rem 0;
 }
-.insp-row > span {
+.insp-row-label {
     width: 7.2rem;
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.05rem;
+    padding-top: 0.2rem;
+}
+.insp-row-label > span {
     font-size: 0.75rem;
     line-height: 1.2;
     color: var(--text-muted);
     font-family: ui-monospace, monospace;
     white-space: nowrap;
+}
+.insp-section-head { margin: 0.8rem 0 0.35rem; }
+.insp-section-head h4 { margin: 0; }
+.obj-summary {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    margin: 0.1rem 0 0.5rem;
 }
 .insp-inputs { display: flex; gap: 0.3rem; flex: 1; }
 .insp-inputs input[type=number], .insp-inputs input[type=text], .insp-inputs select {
@@ -887,3 +923,13 @@
 .matchrig-explain b { color: var(--text-primary); }
 .matchrig-optional { color: var(--text-muted); }
 .matchrig-done[hidden] { display: none; }
+
+/* Wording pass: visible descriptions */
+.why {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-style: normal;
+    line-height: 1.25;
+    margin: 0.05rem 0 0;
+}

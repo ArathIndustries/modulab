@@ -40,7 +40,7 @@ export async function connectSerial({ onData, onStatus }) {
         }
     })();
 
-    onStatus?.({ state: 'connected', label: 'USB serial' });
+    onStatus?.({ state: 'connected', label: 'USB cable' });
     return {
         disconnect: async () => {
             running = false;

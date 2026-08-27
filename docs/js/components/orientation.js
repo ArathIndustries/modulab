@@ -8,10 +8,10 @@
 const STORAGE_KEY = 'modulab-oriented';
 
 const ROWS = [
-    ['top left', 'Connect', 'USB · Bluetooth · Demo signal · Manual sliders'],
-    ['top right', 'Scene', 'Reset · Edit — changes the scene, not needed to use it'],
+    ['top left', 'Connect', 'USB cable · Bluetooth · Fake signal · On-screen sliders'],
+    ['top right', 'Scene', 'Reset the cube · Edit scene'],
     ['bottom left', 'Readings', 'knob values (raw) · part angles (°), live'],
-    ['bottom right', 'Camera', 'drag orbit · wheel zoom · right-drag pan'],
+    ['bottom right', 'Camera', 'drag to orbit · wheel to zoom · right-drag to slide'],
     ['with a board', 'Calibrate knobs', 'appears after connecting · lines up on-screen parts with the real ones'],
 ];
 

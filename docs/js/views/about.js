@@ -18,18 +18,18 @@ export function renderAbout(container) {
 
             <h2>The ladder</h2>
             <ul>
-                <li><strong>See it</strong> — open the <a href="https://arathindustries.github.io/modulab/" target="_blank" rel="noopener">live app</a>, click Manual sliders or Demo signal.</li>
-                <li><strong>Drive it</strong> — any Arduino-ish board over USB: <a href="${DOCS}/TESTING.md#path-a--any-arduino-compatible-board-over-usb-5-minutes" target="_blank" rel="noopener">TESTING.md → Path A</a>.</li>
-                <li><strong>Build a module</strong> — any MCU that prints text: <a href="${DOCS}/PROTOCOL.md#build-your-own-module" target="_blank" rel="noopener">PROTOCOL.md → Build a module</a>.</li>
-                <li><strong>Author a scene</strong> — edit the JSON directly: <a href="${DOCS}/AUTHORING.md#your-first-scene-10-minutes" target="_blank" rel="noopener">AUTHORING.md → Your first scene</a>.</li>
+                <li><strong>See it</strong> — open the <a href="https://arathindustries.github.io/modulab/" target="_blank" rel="noopener">live app</a>, click On-screen sliders or Fake signal.</li>
+                <li><strong>Drive it</strong> — any Arduino-ish board over USB: <a href="${DOCS}/CONNECT.md#path-a--any-arduino-compatible-board-over-usb-5-minutes" target="_blank" rel="noopener">CONNECT.md → Path A</a>.</li>
+                <li><strong>Build a module</strong> — any MCU that prints text: <a href="${DOCS}/BUILD-A-MODULE.md#build-your-own-module" target="_blank" rel="noopener">BUILD-A-MODULE.md → Build a module</a>.</li>
+                <li><strong>Edit a scene</strong> — edit the JSON directly: <a href="${DOCS}/EDIT-THE-SCENE.md#your-first-scene-10-minutes" target="_blank" rel="noopener">EDIT-THE-SCENE.md → Your first scene</a>.</li>
             </ul>
 
             <h2>Connecting</h2>
             <ul>
-                <li><strong>USB serial</strong> — desktop Chrome or Edge only.</li>
+                <li><strong>USB cable</strong> — desktop Chrome or Edge only.</li>
                 <li><strong>Bluetooth</strong> — Chrome/Edge desktop or Android Chrome; not iOS Safari.</li>
-                <li><strong>Demo signal</strong> — no hardware, synthetic channels exercise the whole pipeline.</li>
-                <li><strong>Manual sliders</strong> — drive every channel by hand; URL presets
+                <li><strong>Fake signal</strong> — no hardware, a made-up wave exercises the whole pipeline.</li>
+                <li><strong>On-screen sliders</strong> — drive every knob by hand; URL presets
                     <code>?manual=1&amp;ch0=200&amp;ch1=900</code>.</li>
             </ul>
 
@@ -39,24 +39,25 @@ export function renderAbout(container) {
                 <li><strong>Power</strong> — 3V3 only, never 5V (the nRF52840's pins are not 5V-tolerant).</li>
                 <li><strong>Firmware</strong> — <code>firmware/modulab_ble/</code> in the repo.</li>
                 <li><strong>Any other board</strong> — works if it prints <code>&lt;ch:value&gt;</code> frames
-                    (see <a href="${DOCS}/PROTOCOL.md" target="_blank" rel="noopener">PROTOCOL.md</a>).</li>
+                    (see <a href="${DOCS}/BUILD-A-MODULE.md" target="_blank" rel="noopener">BUILD-A-MODULE.md</a>).</li>
             </ul>
 
             <h2>Calibrate knobs</h2>
             <p>A fresh rig never turns quite right: the printed lever is press-fit onto
             the pot shaft at whatever angle it went on, and no two pots sweep the same
             degrees. Once a board is connected a <strong>Calibrate knobs</strong> button
-            appears under Connect and walks each knob-driven part in turn:</p>
+            appears under Connect and walks each knob-linked part in turn:</p>
             <ul>
-                <li><strong>Zero</strong> — hold the real part at the pose shown · locks where it sits</li>
+                <li><strong>Zero</strong> — hold the real part at the pose shown · locks the resting angle</li>
                 <li><strong>Set swing</strong> — turn it 90° · locks how far it sweeps (optional)</li>
                 <li><strong>Next</strong> — same for the next part · <strong>Done</strong></li>
             </ul>
-            <p>Saved with the scene draft and in Export. The Edit drawer keeps the same
-            two steps on each part's control card for authoring.</p>
+            <p>Saved with your copy of the scene and in Export. The Edit drawer keeps the
+            same two steps on each part's link card for authoring
+            (<a href="${DOCS}/CONNECT.md#calibrate-make-the-screen-turn-like-the-real-lever" target="_blank" rel="noopener">CONNECT.md → Calibrate</a>).</p>
 
             <h2>Diagnostics</h2>
-            <p><a href="#/dashboard">#/dashboard</a> — raw channel values, sample rate,
+            <p><a href="#/dashboard">#/dashboard</a> — raw knob values, sample rate,
             protocol console.</p>
 
             <h2>Provenance &amp; license</h2>

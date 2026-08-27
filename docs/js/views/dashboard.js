@@ -15,10 +15,12 @@ export function renderDashboard(container) {
 
     container.innerHTML = `
         <div class="view dashboard">
+            <h1>Diagnostics</h1>
+            <small class="why">raw readings from the board · frames as they arrive</small>
             <section id="connect-mount"></section>
             <section class="channel-grid" id="channel-grid">
                 <div class="empty-state" id="empty-state">
-                    <p>No channels yet. Connect a module — every channel that
+                    <p>No knobs yet. Connect a board — every knob that
                     speaks announces itself here.</p>
                 </div>
             </section>
@@ -54,7 +56,7 @@ export function renderDashboard(container) {
         card.innerHTML = `
             <header>
                 <span class="series-chip" style="background: var(--series-${slot})"></span>
-                <h2>CH ${ch}</h2>
+                <h2>knob ${ch}</h2>
                 <span class="ch-hz"></span>
             </header>
             <div class="ch-value">—</div>

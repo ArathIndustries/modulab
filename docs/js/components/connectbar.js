@@ -1,6 +1,6 @@
 /**
- * Connect bar — shared by every view. Renders transport buttons + status
- * pill + module badge against the shared stream service, and keeps itself
+ * Connect bar — shared by every view. Renders the connect options + status
+ * pill + board badge against the shared stream service, and keeps itself
  * in sync via stream.onStatus/onHello. Returns an unmount function.
  */
 import { stream } from '../stream.js';
@@ -9,15 +9,41 @@ import { bleSupported, connectBle } from '../transports/ble.js';
 import { connectDemo } from '../transports/demo.js';
 import { connectManual } from '../transports/manual.js';
 
+// idle/disconnected both read as "not connected"; "connecting…" is here for
+// when a transport reports it, even though none currently does.
+const STATE_LABELS = {
+    idle: 'not connected',
+    disconnected: 'not connected',
+    connecting: 'connecting…',
+};
+
 export function mountConnectBar(container) {
     container.innerHTML = `
-        <div class="connect-bar" aria-label="Connection">
-            <button class="btn" data-t="serial">Connect USB</button>
-            <button class="btn" data-t="ble">Connect Bluetooth</button>
-            <button class="btn btn-ghost" data-t="demo">Demo signal</button>
-            <button class="btn btn-ghost" data-t="manual">Manual sliders</button>
-            <button class="btn btn-ghost" data-t="disconnect" hidden>Disconnect</button>
-            <span class="status-pill" data-state="idle">idle</span>
+        <div class="connect-bar" aria-label="Connect">
+            <div class="connect-head">
+                <b>Connect</b>
+                <small class="why">where the readings come from</small>
+            </div>
+            <div class="connect-options">
+                <div class="connect-opt">
+                    <button class="btn" data-t="serial" title="board plugged into this computer">USB cable</button>
+                    <small class="why">board plugged into this computer</small>
+                </div>
+                <div class="connect-opt">
+                    <button class="btn" data-t="ble" title="board on battery, nearby">Bluetooth</button>
+                    <small class="why">board on battery, nearby</small>
+                </div>
+                <div class="connect-opt">
+                    <button class="btn btn-ghost" data-t="demo" title="no hardware — a made-up wave, to see it move">Fake signal</button>
+                    <small class="why">no hardware — a made-up wave, to see it move</small>
+                </div>
+                <div class="connect-opt">
+                    <button class="btn btn-ghost" data-t="manual" title="no hardware — drag sliders instead of turning knobs">On-screen sliders</button>
+                    <small class="why">no hardware — drag sliders instead of turning knobs</small>
+                </div>
+                <button class="btn btn-ghost" data-t="disconnect" hidden>Disconnect</button>
+            </div>
+            <span class="status-pill" data-state="idle">not connected</span>
             <span class="module-badge" hidden></span>
         </div>
         <p class="hint"></p>
@@ -37,7 +63,9 @@ export function mountConnectBar(container) {
         pill.dataset.state = s.state;
         pill.textContent = s.state === 'error'
             ? `error · ${s.message || 'unknown'}`
-            : (s.label ? `${s.state} · ${s.label}` : s.state);
+            : s.state === 'connected'
+                ? (s.label ? `connected · ${s.label}` : 'connected')
+                : (STATE_LABELS[s.state] ?? s.state);
         const connected = s.state === 'connected';
         btn('disconnect').hidden = !connected;
         for (const t of ['serial', 'ble', 'demo', 'manual']) btn(t).hidden = connected;
@@ -46,7 +74,7 @@ export function mountConnectBar(container) {
     function renderHello(h) {
         if (!h || h.channels === 0) return;
         badge.hidden = false;
-        badge.textContent = `module: ${h.name} (${h.channels} ch)`;
+        badge.textContent = `board says: ${h.name} · ${h.channels} knobs`;
     }
 
     btn('serial').addEventListener('click', () => stream.connect(connectSerial));
