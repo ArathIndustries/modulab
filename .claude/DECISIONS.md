@@ -32,3 +32,7 @@
   the HUD (Calibrate knobs) — the Edit drawer is for authoring, not for using
 - Twin view deleted; Dashboard demoted to #/dashboard (Diagnostics); nav is
   Workspace · About. Scene ids name the part (upper-arm, forearm, cube)
+- One vocabulary for everything a person reads (part · knob · link · resting
+  angle · starting angle · swing · scene · your copy); every visible label
+  carries its explanation as a visible line, never hover-only; JSON keys
+  and code identifiers keep their names (Arath, wording pass 8/27)

@@ -13,9 +13,11 @@ Layering plan lives in EDIT-THE-SCENE.md (authoritative). Status 2026-07-27:
    decision), stress coloring, computed expressions, lesson presets as
    shareable scene documents
 
-6. Newcomer pass (8/27) — SHIPPED A–E: one product tab, named parts,
-   Calibrate knobs in the HUD, orientation panel, About rewrite. Open: F =
-   CONTRIBUTING + code map + jargon scrub + .claude/CLAUDE.md fix.
+6. Newcomer pass (8/27) — SHIPPED A–F: one product tab, named parts,
+   Calibrate knobs in the HUD, orientation panel, About rewrite, wording
+   pass (one vocabulary, visible lines, docs renamed). Candidates next:
+   joint angle limits (min/max on a link), gizmo drag wins over the knob,
+   manipulation pain points.
 
 ## Cross-cutting, unscheduled
 

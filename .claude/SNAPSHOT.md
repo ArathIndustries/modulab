@@ -39,8 +39,18 @@ nav, reachable at #/dashboard as Diagnostics.
   **orientation panel** naming the four HUD corners (`components/
   orientation.js`, `?` in the nav, localStorage `modulab-oriented`);
   About rewritten. UI copy rule: label → value descriptives, not sentences.
-  NEXT: bake Arath's exported calibration into pol-lever-arm.json;
-  CONTRIBUTING/code walk-through (row F, awaiting his yes).
+- **F — wording pass** (8/27 night, SHIPPED): one vocabulary everywhere
+  (part · knob · link · resting angle · starting angle · swing · scene ·
+  your copy — spec in `.claude/wording-pass.md`); every visible label has
+  its line underneath (`.why`); selected part shows a summary line;
+  remove-list jargon gone from the UI; docs renamed CONNECT.md /
+  BUILD-A-MODULE.md / EDIT-THE-SCENE.md; README "Words used here" +
+  code-flow section; firmware comments for first-time readers;
+  `.claude/CLAUDE.md` real. Dead `docs/js/nodes.js` removed. Scene rests
+  flat (0/0), starting angle 125 so mid-travel = flat.
+  NEXT (his ideas, not yet approved): joint min/max angle limits; gizmo
+  drag wins over the knob; on-screen manipulation pain points (unnamed).
+  Still owed: his measured pot sweep number.
 - **Overlays (lesson layer)**: vector, label (+{speed}{height}{ke}{pe}),
   contacts (solver impulses), trail, graph (pivot sparklines: deg/omega/
   speed/ref). pol-lever-arm carries θ₀+ω₀ (upper-arm), θ₁ (forearm), cube
